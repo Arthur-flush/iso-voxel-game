@@ -3,6 +3,8 @@
 
 int main(int argc, char *argv[])
 {
+    system("cls");
+
     int statut = EXIT_FAILURE;
 
     SDL_Init(SDL_INIT_VIDEO);
@@ -18,6 +20,8 @@ int main(int argc, char *argv[])
                                            DEFAULT_WINDOWS_W,
                                            DEFAULT_WINDOWS_H,
                                            GPU_DEFAULT_INIT_FLAGS);
+
+    // GPU_SetFullscreen(true, false);
     
     // std::cout << "vsync : " << GPU_IsFeatureEnabled(GPU_INIT_ENABLE_VSYNC) << "\n";    
     // std::cout << "double buff : " << !GPU_IsFeatureEnabled(GPU_INIT_DISABLE_DOUBLE_BUFFER) << "\n";    
@@ -35,7 +39,6 @@ int main(int argc, char *argv[])
     // }
     // std::cout << GPU_GetCurrentRenderer()->id.name << '\n';
 
-    // GPU_SetFullscreen(true, false);
     GPU_AddDepthBuffer(screen);
     GPU_SetDepthFunction(screen, GPU_LEQUAL);
     // GPU_SetDepthWrite(screen, true);

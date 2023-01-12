@@ -4,6 +4,15 @@
 #include <blocks.hpp>
 #include <vector>
 
+struct line_presence
+{
+    Uint16 oid;
+    Uint16 tid;
+
+    world_coordonate owcoord;
+    world_coordonate twcoord;
+};
+
 struct World
 {
     World();
@@ -17,8 +26,6 @@ struct World
 
     chunk_coordonate max_block_coord;
 
-    // std::vector<std::vector<std::vector<chunk>>> chunk;
-
     chunk ***chunk;
 
     block* get_block(chunk_coordonate, int, int, int);
@@ -29,7 +36,30 @@ struct World
     Uint16 get_opaque_block_id(chunk_coordonate, int, int, int);
     
     block_coordonate convert_wcoord(int, int, int);
-    // bool is_block_highlighted();
+    world_coordonate convert_coord(block_coordonate);
+
+
+    void translate_world_view_position(chunk_coordonate&, int&, int&, int&);
+    void translate_world_view_wposition(int&, int&, int&);
+    // void translate_world_view_jposition(int&, int&, int&);
+    int world_view_position;
+
+    void compress_chunk(int, int, int);
+    void compress_all_chunks();
+
+    /**** GET PRESENCE ON A PREDEFINED LINE OF THE WORLD ****/
+
+    // F := fast, but risky because no coord checking
+    // P := get position too
+    // O := get only opaque blocks
+    // T := get only transparent blocks
+    // R := reverse, if the jumps are negative
+    // nox/y/z := don't check x/y/z
+
+    Uint32 line_presenceF(world_coordonate, world_coordonate);
+
+    line_presence line_visiblePR(world_coordonate, world_coordonate);
+    /********************************************************/
 };
 
 #endif

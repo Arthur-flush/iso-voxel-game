@@ -55,8 +55,8 @@ void projection_grid::init_pos(const int sizex, const int sizey, const int sizez
                 pos[face][i][j].is_on_screen = true;
                 pos[face][i][j].render_flags = {0, 0, 0, 0};
                 pos[face][i][j].render_flags_transparent = {0, 0, 0, 0};
-                pos[face][i][j].block = NULL;
-                pos[face][i][j].transparent_block = NULL;
+                pos[face][i][j].block.id = BLOCK_EMPTY;
+                pos[face][i][j].transparent_block.id = BLOCK_EMPTY;
                 pos[face][i][j].identical_line_counter = 0;
                 pos[face][i][j].identical_line_counter_transparent = 0;
             }
@@ -278,17 +278,17 @@ void projection_grid::refresh_all_identical_line()
         identical_line_counter_transparent = 0;
 
         rf2 = &pos[face][i][size[face][1]-2].render_flags;
-        id2 = pos[face][i][size[face][1]-2].block ? pos[face][i][size[face][1]-2].block->id : 0;
+        id2 = pos[face][i][size[face][1]-2].block.id;
 
         trf2 = &pos[face][i][size[face][1]-2].render_flags_transparent;
-        tid2 = pos[face][i][size[face][1]-2].transparent_block ? pos[face][i][size[face][1]-2].transparent_block->id : 0;  
+        tid2 = pos[face][i][size[face][1]-2].transparent_block.id;  
 
         for(int j = size[face][1]-3; j >= 0; j--)
         {
             sb = &pos[face][i][j];
 
             rf = &sb->render_flags;
-            id = sb->block ? sb->block->id : 0;
+            id = sb->block.id;
 
 
             if(identical_line_counter < IDENDICAL_LINE_MAX && 
@@ -305,7 +305,7 @@ void projection_grid::refresh_all_identical_line()
             id2 = id;
 
             trf = &sb->render_flags_transparent;
-            tid = sb->transparent_block ? sb->transparent_block->id : 0;
+            tid = sb->transparent_block.id;
 
             if(identical_line_counter_transparent < IDENDICAL_LINE_MAX && 
                trf->r == trf2->r &&
@@ -333,15 +333,18 @@ void projection_grid::refresh_all_identical_line()
     {
         identical_line_counter = 0;
 
-        rf2 = &pos[face][size[face][1]-1][i].render_flags;
-        id2 = pos[face][size[face][1]-1][i].block ? pos[face][size[face][1]-1][i].block->id : 0;
+        rf2 = &pos[face][size[face][0]-1][i].render_flags;
+        id2 = pos[face][size[face][0]-1][i].block.id;
+
+        trf2 = &pos[face][size[face][0]-2][i].render_flags_transparent;
+        tid2 = pos[face][size[face][0]-2][i].transparent_block.id;  
 
         for(int j = size[face][0]-2; j >= 0; j--)
         {
             sb = &pos[face][j][i];
 
             rf = &sb->render_flags;
-            id = sb->block ? sb->block->id : 0;
+            id = sb->block.id;
 
             if(identical_line_counter < IDENDICAL_LINE_MAX && 
                rf->r == rf2->r &&
@@ -362,7 +365,7 @@ void projection_grid::refresh_all_identical_line()
             id2 = id;
 
             trf = &sb->render_flags_transparent;
-            tid = sb->transparent_block ? sb->transparent_block->id : 0;
+            tid = sb->transparent_block.id;
 
             if(identical_line_counter_transparent < IDENDICAL_LINE_MAX && 
                trf->r == trf2->r &&
@@ -384,7 +387,63 @@ void projection_grid::refresh_all_identical_line()
 
     // y z
     face = 0;
+    for(int i = 0; i < size[face][1]; i++)
+    {
+        identical_line_counter = 0;
 
+        rf2 = &pos[face][size[face][0]-1][i].render_flags;
+        id2 = pos[face][size[face][0]-1][i].block.id;
+
+        trf2 = &pos[face][size[face][0]-2][i].render_flags_transparent;
+        tid2 = pos[face][size[face][0]-2][i].transparent_block.id;  
+
+        for(int j = size[face][0]-2; j >= 0; j--)
+        {
+            sb = &pos[face][j][i];
+
+            rf = &sb->render_flags;
+            id = sb->block.id;
+
+            if(identical_line_counter < IDENDICAL_LINE_MAX && 
+               rf->r == rf2->r &&
+               rf->g == rf2->g && 
+               rf->b == rf2->b && 
+               rf->a == rf2->a &&
+               id == id2)
+                identical_line_counter ++;
+            else
+                identical_line_counter = 0;
+
+            sb->identical_line_counter = identical_line_counter;
+
+            rf2 = rf;
+            id2 = id;
+
+            rf2 = rf;
+            id2 = id;
+
+            trf = &sb->render_flags_transparent;
+            tid = sb->transparent_block.id;
+
+            if(identical_line_counter_transparent < IDENDICAL_LINE_MAX && 
+               trf->r == trf2->r &&
+               trf->g == trf2->g && 
+               trf->b == trf2->b && 
+               trf->a == trf2->a &&
+               tid == tid2)
+                identical_line_counter_transparent ++;
+            else
+                identical_line_counter_transparent = 0;
+
+            sb->identical_line_counter_transparent = identical_line_counter_transparent;
+            sb->identical_line_counter = identical_line_counter;
+
+            trf2 = trf;
+            tid2 = tid;
+        }
+    }
+    
+    /*
     for(int i = 0; i < size[face][0]; i++)
     {
         identical_line_counter = 0;
@@ -437,6 +496,7 @@ void projection_grid::refresh_all_identical_line()
             tid2 = tid;
         }
     }
+    */
 
     // std::cout << "finished !\n";
 }

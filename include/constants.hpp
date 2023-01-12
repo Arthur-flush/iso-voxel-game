@@ -3,7 +3,7 @@
 
 #include <iostream>
 
-#define MAIN_GAME_VERSION "0.7"
+#define MAIN_GAME_VERSION "0.8.2"
 
 //////// WINDOW DEFAULT CONSTANTS ////////
 #define DEFAULT_WINDOWS_W 1920
@@ -73,10 +73,12 @@ tested floats exemple :
 #define BLOCK_HIGHLIGHT   0b00000100
 #define SHADERTEXT_WATER  0b00000101
 
+//////// CHUNK COMPRESSION ////////
+#define CHUNK_EMPTY       0b000000000
+#define CHUNK_NON_UNIFORM 0b100000000
+
 //////// BLOCK ID ////////
-
 #define BLOCK_TRANSPARENT_LIMIT 241
-
 #define BLOCK_EMPTY     0
 #define BLOCK_DEBUG     1
 #define BLOCK_BLUE      2

@@ -27,17 +27,15 @@ struct block_coordonate
 struct block
 {
     Uint8 id;
-    // SDL_Color render_flags;
-}; // taille à optimiser
+};
 
 struct chunk
 {
-    bool ready_to_render;
+    bool ready_to_render; // old je pense
+    chunk_coordonate coord; // same
 
-    chunk_coordonate coord;
+    int compress_value;
     block block[CHUNK_SIZE][CHUNK_SIZE][CHUNK_SIZE];
-    
-    // void read_from_file(Uint32 x, Uint32 y);
 };
 
 #endif

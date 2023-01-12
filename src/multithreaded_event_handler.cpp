@@ -5,8 +5,23 @@ Multithreaded_Event_Handler::Multithreaded_Event_Handler(Render_Engine &_RE) : R
     init_cond = SDL_CreateMutex();
     new_frame_to_render = SDL_CreateCond();
     secondary_frame_op_finish = SDL_CreateCond();
+
+    nfs_mut = SDL_CreateMutex();
+    new_nfs_event = SDL_CreateCond();
+
     game_is_running = true;
     RE.SecondaryThread = SDL_CreateThread(SecondaryThread_operations, "iso2", this);
+    NFS_Thread = SDL_CreateThread(NFS_operations, "iso3", this);
+}
+
+Multithreaded_Event_Handler::~Multithreaded_Event_Handler()
+{
+    SDL_DestroyMutex(init_cond);
+    SDL_DestroyMutex(nfs_mut);
+
+    SDL_DestroyCond(new_frame_to_render);
+    SDL_DestroyCond(secondary_frame_op_finish);
+    SDL_DestroyCond(new_nfs_event);
 }
 
 void Multithreaded_Event_Handler::add_event(game_event &new_event)
@@ -161,7 +176,7 @@ void Multithreaded_Event_Handler::handle()
                event.data.coord1.chunk.y <= RE.world.max_chunk_coord.y &&
                event.data.coord1.chunk.z <= RE.world.max_chunk_coord.z)
                {
-                STO_data.coord1.chunk = event.data.coord1.chunk;
+                STO_data.coord1.chunk = event.data.coord1.chunk;   
                 SecondaryThread_opcode |= STHREAD_OP_SINGLE_CHUNK_POS;
                }
 
@@ -207,7 +222,7 @@ void Multithreaded_Event_Handler::handle()
                     RE.refresh_block_visible(STO_data.coord1.chunk, STO_data.coord1.x, STO_data.coord1.y, STO_data.coord1.z);
                     RE.refresh_block_render_flags(STO_data.coord1.chunk, STO_data.coord1.x, STO_data.coord1.y, STO_data.coord1.z);
                     RE.projection_grid.refresh_all_identical_line();
-
+                    RE.world.compress_all_chunks(); 
                     // RE.refresh_block_render_flags(event.data.coord1.chunk);
                 }
             }
@@ -295,6 +310,68 @@ int SecondaryThread_operations(void *data)
     }
 
     // std::cout << "STO fnct : closing secondary thread\n";
+
+    return 0;
+}
+
+void Multithreaded_Event_Handler::add_nfs_event(const int nfs_event_id)
+{
+    nfs_event_queue.push(nfs_event_id);
+    SDL_CondSignal(new_nfs_event);
+}
+
+void Multithreaded_Event_Handler::drop_all_nfs_event()
+{
+    // stop_nfs_op = false;
+
+    while(!nfs_event_queue.empty())
+        nfs_event_queue.pop();
+}
+
+int NFS_operations(void *data)
+{
+    Multithreaded_Event_Handler* MEH = (Multithreaded_Event_Handler*)data;
+
+    int event;
+    
+    // std::cout << "\n===> Launching NFS OP Thread\n";
+    while(MEH->game_is_running)
+    {
+        SDL_LockMutex(MEH->nfs_mut);
+
+        if(MEH->game_is_running)
+        {
+            SDL_CondWait(MEH->new_nfs_event, MEH->nfs_mut);
+
+            event = NFS_OP_NONE;
+
+
+            while(!MEH->nfs_event_queue.empty())
+            {
+                event = MEH->nfs_event_queue.front();
+                MEH->nfs_event_queue.pop();
+
+                switch (event)
+                {
+                case NFS_OP_ALL_BLOCK_VISIBLE :
+                    MEH->RE.refresh_all_block_visible2();
+                    break;
+                
+                case NFS_OP_ALL_RENDER_FLAG :
+                    MEH->RE.refresh_all_render_flags2();
+                    MEH->RE.projection_grid.refresh_all_identical_line();
+                    break;
+
+                default:
+                    break;
+                }
+            }
+        }
+
+        SDL_UnlockMutex(MEH->nfs_mut);
+    }
+
+    // std::cout <<  "\n===> Closing NFS OP Thread\n";
 
     return 0;
 }

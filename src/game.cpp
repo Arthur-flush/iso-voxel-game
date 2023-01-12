@@ -13,6 +13,7 @@ void Game::init(GPU_Target* _screen)
 
     // chunk_coordonate world_size = {256, 256, 32};
     chunk_coordonate world_size = {32, 32, 12};
+    // chunk_coordonate world_size = {128, 128, 16};
     world.init(world_size.x, world_size.y, world_size.z);
     RE.projection_grid.init_pos(world_size.x*CHUNK_SIZE, world_size.y*CHUNK_SIZE, world_size.z*CHUNK_SIZE);
 
@@ -53,6 +54,8 @@ void Game::init(GPU_Target* _screen)
     GPU_SetShaderImage(RE.Textures[BLOCK_AO]->ptr, RE.shader.get_location("water"), 4);
     RE.shader.deactivate();
 
+
+    world.world_view_position = 0;
     /// a remplacer plus tard ///
     std::cout << "game init : generating world... ";
     for(Uint8 i = 0; i < CHUNK_SIZE; i++)
@@ -78,9 +81,12 @@ void Game::init(GPU_Target* _screen)
 
             if(wz < 42 && !world.chunk[x][y][z].block[i][j][k].id)
                 world.chunk[x][y][z].block[i][j][k].id = BLOCK_WATER;
+
+            if(wz < 42 && (wx == world.max_block_coord.x-1 || wy == world.max_block_coord.y-1))
+                world.chunk[x][y][z].block[i][j][k].id = BLOCK_DEBUG;
             
-            // if(wz > 25 && wx == 150)
-            //     world.chunk[x][y][z].block[i][j][k].id = BLOCK_DEBUG;
+            if(wx == 150)
+                world.chunk[x][y][z].block[i][j][k].id = BLOCK_DEBUG;
 
             // if(wz == 0 && wx == 15)
             //     world.chunk[x][y][z].block[i][j][k].id = BLOCK_GREEN;
@@ -92,19 +98,21 @@ void Game::init(GPU_Target* _screen)
         }
     }
     //////////////////////////////
+    world.compress_all_chunks();
     std::cout << "finished !\n";
 
-    RE.refresh_block_onscreen();
 
-    std::cout << "game init : refreshing all block visible... ";
-    RE.refresh_all_block_visible();
-    std::cout << "finished !\n";
+    // RE.refresh_block_onscreen();
+
+    // RE.refresh_all_block_visible();
 
     // RE.projection_grid.refresh_all_identical_line();
 
+    GameEvent.add_nfs_event(NFS_OP_ALL_BLOCK_VISIBLE);
+    GameEvent.add_nfs_event(NFS_OP_ALL_RENDER_FLAG);
 
     GameEvent.add_event(GAME_EVENT_CAMERA_MOUVEMENT, (pixel_coord){RE.window.size.x/2, RE.window.size.y/2});
-    GameEvent.add_event(GAME_EVENT_INIT_WORLD_RENDER_FLAGS);
+    // GameEvent.add_event(GAME_EVENT_INIT_WORLD_RENDER_FLAGS);
     GPU_AddDepthBuffer(RE.screen2);
     GPU_SetDepthFunction(RE.screen2, GPU_LEQUAL);
 }
@@ -171,6 +179,21 @@ void Game::input()
                             GameEvent.add_event(GAME_EVENT_NEWSCALE, PANORAMA_SCALE_THRESHOLD);
                             break;
                         
+                        case SDLK_d :
+                            world.world_view_position = (world.world_view_position+1)%4;
+                            GameEvent.drop_all_nfs_event();
+                            GameEvent.add_nfs_event(NFS_OP_ALL_BLOCK_VISIBLE);
+                            GameEvent.add_nfs_event(NFS_OP_ALL_RENDER_FLAG);
+                            break;
+                        
+                        case SDLK_q :
+                            world.world_view_position --;
+                            world.world_view_position += world.world_view_position < 0 ? 4 : 0; 
+                            GameEvent.drop_all_nfs_event();
+                            GameEvent.add_nfs_event(NFS_OP_ALL_BLOCK_VISIBLE);
+                            GameEvent.add_nfs_event(NFS_OP_ALL_RENDER_FLAG);
+                            break;
+
                         case SDLK_LEFT :
                             Current_block = Current_block == BLOCK_SAND ? 0 : Current_block;
                             Current_block = (Current_block+1)%5;
@@ -189,6 +212,7 @@ void Game::input()
                             std::cout << "sprite counter : " << RE.sprite_counter << '\n';
                             std::cout << "scale : 1/" << 1/RE.window.scale << '\n';
                             std::cout << "block_size : " << RE.block_onscreen_size << '\n';
+                            std::cout << "World view position : " << world.world_view_position << '\n';
                             break;
 
                         case SDLK_RALT :
@@ -241,7 +265,12 @@ int Game::mainloop()
 
     GameEvent.game_is_running = false;
     GameEvent.handle();
+
     SDL_WaitThread(RE.SecondaryThread, NULL);
+
+    GameEvent.drop_all_nfs_event();
+    SDL_CondSignal(GameEvent.new_nfs_event);
+    SDL_WaitThread(GameEvent.NFS_Thread, NULL);
 
     return state;
 }

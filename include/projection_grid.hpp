@@ -5,12 +5,15 @@
 #include <constants.hpp>
 #include <blocks.hpp>
 
-#define IDENDICAL_LINE_MAX 41
+#define IDENDICAL_LINE_MAX 41 //41
 
 struct screen_block
 {
-    block *transparent_block;
-    block *block;
+    // block *transparent_block;
+    // block *block;
+
+    block transparent_block;
+    block block;
 
     Uint16 height;
     Uint16 x;

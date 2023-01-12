@@ -114,6 +114,14 @@ struct Render_Engine
 
     void refresh_all_render_flags();
 
+    /***************************************/
+    void set_shadow_context(SDL_Color&, int, int, int);
+    void set_block_shadow_context2(int, int, int);
+    void refresh_all_render_flags2();
+    void refresh_all_block_visible2();
+    void refresh_line_visible2(int, int, int, world_coordonate&);
+    /***************************************/
+
     GPU_Target *screen2;
     GPU_Image  *final_world_render;
 
@@ -133,6 +141,8 @@ struct Render_Engine
     Uint64 timems;
 
     int current_block_tmp;
+
+
 };
 
 

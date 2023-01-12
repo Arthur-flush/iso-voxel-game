@@ -169,8 +169,8 @@ vec3 hsv2rgb(vec3 c)
     return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
 }
 
-const vec4 u_WaveStrengthX=vec4(4.15,4.66,0.0016,0.0015)*log(sprite_size)/3.0;
-const vec4 u_WaveStrengthY=vec4(2.54,6.33,0.00102,0.0025)*log(sprite_size)/3.0;
+const vec4 u_WaveStrengthX=vec4(4.15,4.66,0.0016,0.0015)*log(sprite_size)/7.0;
+const vec4 u_WaveStrengthY=vec4(2.54,6.33,0.00102,0.0025)*log(sprite_size)/7.0;
 const float iTime = 0.5;
 vec2 dist(vec2 uv)
 { 
@@ -311,6 +311,8 @@ void main (void)
         PixelTint *= dot(light_direction, vec3(pixel_norm.r, pixel_norm.g, pixel_norm.b));
     }
     /////////////////////////////////////////////////////////////////
+
+    // pixel = vec4(render_flagsl/256.0, render_flagsr/256.0, render_flagst/256.0, 1.0);
 
     PixelTint.a = 1;
     handle_depth();

@@ -72,6 +72,8 @@ Uint16 World::get_block_id_wcoord(int x, int y, int z)
 
 block* World::get_block(chunk_coordonate coord, int x, int y, int z)
 {
+    translate_world_view_position(coord, x, y, z);
+
     while(x < 0){x += CHUNK_SIZE; coord.x --;}
 
     while(x >= CHUNK_SIZE){x -= CHUNK_SIZE; coord.x ++;}
@@ -83,39 +85,6 @@ block* World::get_block(chunk_coordonate coord, int x, int y, int z)
     while(z < 0){z += CHUNK_SIZE; coord.z --;}
 
     while(z >= CHUNK_SIZE){z -= CHUNK_SIZE; coord.z ++;}
-
-    // if(x < 0)
-    // {
-    //     coord.x -= (-x/CHUNK_SIZE)+1;
-    //     x = (-x%CHUNK_SIZE);
-    // }
-    // else if(x >= CHUNK_SIZE)
-    // {
-    //     coord.x += x/CHUNK_SIZE;
-    //     x = x%CHUNK_SIZE;
-    // }
-
-    // if(y < 0)
-    // {
-    //     coord.y -= (-y/CHUNK_SIZE)+1;
-    //     y = (-y%CHUNK_SIZE);
-    // }
-    // else if(y >= CHUNK_SIZE)
-    // {
-    //     coord.y += y/CHUNK_SIZE;
-    //     y = y%CHUNK_SIZE;
-    // }
-
-    // if(z < 0)
-    // {
-    //     coord.z -= (-z/CHUNK_SIZE)+1;
-    //     z = (-z%CHUNK_SIZE);
-    // }
-    // else if(z >= CHUNK_SIZE)
-    // {
-    //     coord.z += z/CHUNK_SIZE;
-    //     z = z%CHUNK_SIZE;
-    // }
 
     if(coord.x < min_chunk_coord.x || coord.x > max_chunk_coord.x ||
        coord.y < min_chunk_coord.y || coord.y > max_chunk_coord.y ||
@@ -132,6 +101,8 @@ block* World::get_block(chunk_coordonate coord, int x, int y, int z)
 
 block* World::get_block_wcoord(int x, int y, int z)
 {
+    translate_world_view_wposition(x, y, z);
+
     chunk_coordonate coord = {x / CHUNK_SIZE,
                              y / CHUNK_SIZE,
                              z / CHUNK_SIZE};
@@ -171,4 +142,433 @@ block_coordonate World::convert_wcoord(int x, int y, int z)
     bc.chunk.z = z/CHUNK_SIZE;
 
     return bc;
+}
+
+world_coordonate World::convert_coord(block_coordonate bc)
+{
+    world_coordonate coord;
+
+    coord.x = bc.x + bc.chunk.x*CHUNK_SIZE;
+    coord.y = bc.y + bc.chunk.y*CHUNK_SIZE;
+    coord.z = bc.z + bc.chunk.z*CHUNK_SIZE;
+
+    if(coord.x > max_block_coord.x)
+    {
+        std::cout << "\n" << bc.chunk.x << " " << bc.x << " " << max_chunk_coord.x;
+    }
+
+    return coord;
+}
+
+void World::translate_world_view_position(chunk_coordonate& coord, int& x, int& y, int& z)
+{
+    if(world_view_position == 1)
+    {
+        int ytmp = y;
+        int cytmp = coord.y;
+
+        y = x;
+        x = ytmp;
+
+        coord.y = coord.x;
+        coord.x = cytmp;
+
+        ytmp = max_block_coord.y - y - coord.y*CHUNK_SIZE;
+        y = ytmp%CHUNK_SIZE;
+        coord.y = ytmp/CHUNK_SIZE;
+    }
+    else if(world_view_position == 3)
+    {
+        int ytmp = y;
+        int cytmp = coord.y;
+
+        y = x;
+        x = ytmp;
+
+        coord.y = coord.x;
+        coord.x = cytmp;
+
+        ytmp = max_block_coord.x - x - coord.x*CHUNK_SIZE;
+        x = ytmp%CHUNK_SIZE;
+        coord.x = ytmp/CHUNK_SIZE;
+    }
+    else if(world_view_position == 2)
+    {
+        y = max_block_coord.y - y - coord.y*CHUNK_SIZE;
+        x = max_block_coord.x - x - coord.x*CHUNK_SIZE;
+
+        coord.y = y/CHUNK_SIZE;
+        coord.x = x/CHUNK_SIZE;
+        
+        y = y%CHUNK_SIZE;
+        x = x%CHUNK_SIZE;
+    }
+}
+
+void World::translate_world_view_wposition(int& x, int& y, int& z)
+{
+    if(world_view_position == 1)
+    {
+        int ytmp = y;
+
+        y = x;
+        x = ytmp;
+
+        y = max_block_coord.y-y;
+    }
+    else if(world_view_position == 3)
+    {
+        int ytmp = y;
+
+        y = x;
+        x = ytmp;
+
+        x = max_block_coord.x-x;
+    }
+    else if(world_view_position == 2)
+    {
+        y = max_block_coord.y-y;
+        x = max_block_coord.x-x;
+    }
+}
+
+void World::compress_chunk(int x, int y, int z)
+{
+    // struct chunk* c = &chunk[x][y][z];
+
+    // c->compress_value = CHUNK_NON_UNIFORM;
+
+    // int id = c->block[0][0][0].id;
+
+    // for(int i = 1; i < CHUNK_SIZE; i++)
+    //     if(c->block[0][0][i].id != id)
+    //         return;
+
+    // Uint64 *c2 = (Uint64*)(&c->block);
+
+    // int size = (CHUNK_SIZE*CHUNK_SIZE*CHUNK_SIZE)/8;
+
+    // for(int i = 0; i < size; i++)
+    //     if(c2[0] != c2[i])
+    //         return;
+    
+    // c->compress_value = id;
+
+    struct chunk* c = &chunk[x][y][z];
+    c->compress_value = CHUNK_NON_UNIFORM;
+    Uint8 val = c->block[0][0][0].id;
+
+    for(int i = 0; i < CHUNK_SIZE; i++)
+        for(int j = 0; j < CHUNK_SIZE; j++)
+            for(int k = 0; k < CHUNK_SIZE; k++)
+                if(c->block[i][j][k].id != val)
+                    return;
+    
+    c->compress_value = val;
+
+    // std::cout << "\nCHUNK COMPRESSED AT COORD " << x << " " << y << " " << z << " ";
+    // std::cout << "\tWITH ID " << id;
+}
+
+void World::compress_all_chunks()
+{
+    for(int x = 0; x <= max_chunk_coord.x; x++)
+    for(int y = 0; y <= max_chunk_coord.y; y++)
+    for(int z = 0; z <= max_chunk_coord.z; z++)
+    {
+        compress_chunk(x, y, z);
+    }
+}
+
+Uint32 World::line_presenceF(world_coordonate start, world_coordonate jump)
+{
+    // No valid coord checking
+    // Positions arent output
+    // Both opaque and transparent blocks are checked, but the function ends when an opaque is found
+    // Jumps are positive
+
+    if(start.x > max_block_coord.x || start.y > max_block_coord.y || start.x > max_block_coord.z)
+        return 0;
+
+    struct chunk* c;
+    block_coordonate bc = convert_wcoord(start.x, start.y, start.z);
+    Uint16 oid = BLOCK_EMPTY;
+    Uint16 tid = BLOCK_EMPTY;
+    bool chunk_end = false;
+
+    while(bc.chunk.x <= max_chunk_coord.x && bc.chunk.y <= max_chunk_coord.y && bc.chunk.z <= max_chunk_coord.z)
+    {
+        c = &chunk[bc.chunk.x][bc.chunk.y][bc.chunk.z];
+
+        // std::cout << "\nboucle 1" << bc.chunk.x << " " << max_chunk_coord.x << " " << c->compress_value;
+
+        if(c->compress_value == CHUNK_NON_UNIFORM)
+        {
+            chunk_end = false;
+
+            while(!chunk_end)
+            {
+                oid = c->block[bc.x][bc.y][bc.z].id;
+
+                if(oid >= BLOCK_TRANSPARENT_LIMIT)
+                {
+                    tid = oid;
+                }
+                else if(oid != BLOCK_EMPTY)
+                {
+                    // std::cout << "\n\t yo1 " << c->compress_value;
+                    return oid + (tid<<8);
+                }
+
+                bc.x += jump.x;
+                bc.y += jump.y;
+                bc.z += jump.z;
+
+                if(bc.x == CHUNK_SIZE)
+                {
+                    bc.chunk.x += jump.x;
+                    bc.x = 0;
+                    chunk_end = true;
+                }
+                if(bc.y == CHUNK_SIZE)
+                {
+                    bc.chunk.y += jump.y;
+                    bc.y = 0;
+                    chunk_end = true;
+                }
+                if(bc.z == CHUNK_SIZE)
+                {
+                    bc.chunk.z += jump.z;
+                    bc.z = 0;
+                    chunk_end = true;
+                }
+            }
+        }
+        else if(c->compress_value != BLOCK_EMPTY && c->compress_value < BLOCK_TRANSPARENT_LIMIT)
+        {
+            return c->compress_value + (tid<<8);
+        }
+        else
+        {
+            if(c->compress_value != BLOCK_EMPTY)
+                tid = c->compress_value;
+            
+            chunk_end = false;
+
+            while(!chunk_end)
+            {
+                bc.x += jump.x;
+                bc.y += jump.y;
+                bc.z += jump.z;
+
+                if(bc.x == CHUNK_SIZE)
+                {
+                    bc.chunk.x += jump.x;
+                    bc.x = 0;
+                    chunk_end = true;
+                }
+                if(bc.y == CHUNK_SIZE)
+                {
+                    bc.chunk.y += jump.y;
+                    bc.y = 0;
+                    chunk_end = true;
+                }
+                if(bc.z == CHUNK_SIZE)
+                {
+                    bc.chunk.z += jump.z;
+                    bc.z = 0;
+                    chunk_end = true;
+                }
+            }
+
+        }
+
+    }
+
+    return 0;
+}
+
+// line_presence World::line_visiblePR(world_coordonate start, world_coordonate jump)
+// {
+//     // Valid coord checking
+//     // Positions are output
+//     // Both opaque and transparent blocks are checked, but the function ends when an opaque is found
+//     // Jumps can be negative
+
+//     line_presence lp = {0};
+
+//     if(start.x > max_block_coord.x || start.y > max_block_coord.y || start.z > max_block_coord.z)
+//     {
+//         std::cout << "\nline_visiblePR : Wrong position given at " << start.x << ' ' << start.y << ' ' << start.z;
+//         return lp;
+//     }
+
+//     struct chunk* c;
+//     bool chunk_end = false;
+
+//     int diff = max_block_coord.z - start.z;
+//     start.x += diff;
+//     start.y += diff;
+//     start.z += diff;
+
+//     int id;
+//     block_coordonate bc = convert_wcoord(start.x, start.y, start.z);
+
+//     while
+//     (
+//           bc.chunk.x >= 0 && bc.chunk.x <= max_chunk_coord.x &&
+//           bc.chunk.y >= 0 && bc.chunk.y <= max_chunk_coord.y &&
+//           bc.chunk.x >= 0
+//     ){
+//         c = &chunk[bc.chunk.x][bc.chunk.y][bc.chunk.z];
+
+//         if(c->compress_value == CHUNK_NON_UNIFORM)
+//         {
+//             chunk_end = false;
+
+                
+//             while(!chunk_end)
+//             {
+//                 id = c->block[bc.x][bc.y][bc.z].id;
+
+//                 if(id >= BLOCK_TRANSPARENT_LIMIT && !lp.tid)
+//                 {
+//                     lp.tid = id;
+//                     lp.twcoord = convert_coord(bc);
+//                 }
+//                 else if(id != BLOCK_EMPTY)
+//                 {
+//                     // std::cout << "yo\n";
+//                     lp.oid = id;
+//                     lp.owcoord = convert_coord(bc);
+//                     return lp;
+//                 }
+
+//                 bc.x += jump.x;
+//                 bc.y += jump.y;
+//                 bc.z += jump.z;
+
+//                 if(bc.x == CHUNK_SIZE || bc.x == -1)
+//                 {
+//                     bc.chunk.x += jump.x;
+//                     bc.x = jump.x < 0 ? CHUNK_SIZE-1 : 0;
+//                     chunk_end = true;
+//                 }
+//                 if(bc.y == CHUNK_SIZE || bc.y == -1)
+//                 {
+//                     bc.chunk.y += jump.y;
+//                     bc.y = jump.y < 0 ? CHUNK_SIZE-1 : 0;
+//                     chunk_end = true;
+//                 }
+//                 if(bc.z == -1)
+//                 {
+//                     bc.chunk.z += jump.z;
+//                     bc.z = CHUNK_SIZE-1;
+//                     chunk_end = true;
+//                 }
+//             }
+//         }
+
+//         else if(c->compress_value != BLOCK_EMPTY && c->compress_value < BLOCK_TRANSPARENT_LIMIT)
+//         {
+//             // std::cout << "yo2\n";
+//             lp.oid = c->compress_value;
+//             lp.owcoord = convert_coord(bc);
+//             return lp;
+//         }
+
+//         else
+//         {
+//             if(c->compress_value != BLOCK_EMPTY && !lp.tid)
+//             {
+//                 lp.tid = c->compress_value;
+//                 lp.twcoord = convert_coord(bc);
+//             }
+            
+//             chunk_end = false;
+
+//             while(!chunk_end)
+//             {
+//                 bc.x += jump.x;
+//                 bc.y += jump.y;
+//                 bc.z += jump.z;
+
+//                 if(bc.x == CHUNK_SIZE || bc.x == -1)
+//                 {
+//                     bc.chunk.x += jump.x;
+//                     bc.x = jump.x < 0 ? CHUNK_SIZE-1 : 0;
+//                     chunk_end = true;
+//                 }
+//                 if(bc.y == CHUNK_SIZE || bc.y == -1)
+//                 {
+//                     bc.chunk.y += jump.y;
+//                     bc.y = jump.y < 0 ? CHUNK_SIZE-1 : 0;
+//                     chunk_end = true;
+//                 }
+//                 if(bc.z == -1)
+//                 {
+//                     bc.chunk.z += jump.z;
+//                     bc.z = CHUNK_SIZE-1;
+//                     chunk_end = true;
+//                 }
+//             }
+
+//         }
+//     }
+
+//     return lp;
+// }
+
+line_presence World::line_visiblePR(world_coordonate start, world_coordonate jump)
+{
+    line_presence lp;
+    lp.oid = 0;
+    lp.tid = 0;
+    lp.owcoord = {0, 0, 0};
+    lp.twcoord = {0, 0, 0};
+
+    if(start.x > max_block_coord.x || start.y > max_block_coord.y || start.z > max_block_coord.z)
+    {
+        std::cout << "\nline_visiblePR : Wrong position given at " << start.x << ' ' << start.y << ' ' << start.z;
+        return lp;
+    }
+
+    int id;
+    block_coordonate bc;
+    world_coordonate wc;
+
+    while
+    (
+        start.x >= 0 && start.y >= 0 && start.z >= 0
+    ){
+        wc.x = start.x;
+        wc.y = start.y;
+        wc.z = start.z;
+
+        id = get_block_id_wcoord(wc.x, wc.y, wc.z);
+
+        if(id)
+        {
+            if(id < BLOCK_TRANSPARENT_LIMIT)
+            {
+                lp.oid = id;
+                lp.owcoord.x = wc.x;
+                lp.owcoord.y = wc.y;
+                lp.owcoord.z = wc.z;
+                return lp;
+            }
+            else if(!lp.tid)
+            {
+                lp.tid = id;
+                lp.twcoord.z = wc.z;
+            }
+        }
+
+
+        start.x --;
+        start.y --;
+        start.z --;
+    }
+    
+    return lp;
 }
