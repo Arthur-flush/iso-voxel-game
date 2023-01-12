@@ -1,0 +1,8 @@
+0.5 :
+    Performances :
+        PC fixe & portable :
+            lag quand modification de blocks pour map de 32x32x16 chunks
+        
+    Bugs :
+        Le flag par défaut des ombres est buggé, pleins de faces d'objets entérés sont dans l'ombre
+
