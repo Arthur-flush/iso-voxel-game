@@ -77,6 +77,10 @@ tested floats exemple :
 #define CHUNK_EMPTY       0b000000000
 #define CHUNK_NON_UNIFORM 0b100000000
 
+//////// SAVE/LOAD ERROR CODES ////////
+#define SAVE_ERROR_NONE 0
+#define SAVE_ERROR_FILE_NOT_OPEN 1
+
 //////// BLOCK ID ////////
 #define BLOCK_TRANSPARENT_LIMIT 241
 #define BLOCK_EMPTY     0
@@ -87,4 +91,8 @@ tested floats exemple :
 #define BLOCK_LIGHT     5
 #define BLOCK_SAND      17
 #define BLOCK_WATER     241
+
+
+
+
 #endif

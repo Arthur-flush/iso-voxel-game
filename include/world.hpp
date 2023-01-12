@@ -38,6 +38,13 @@ struct World
     block_coordonate convert_wcoord(int, int, int);
     world_coordonate convert_coord(block_coordonate);
 
+    /* load and save functions
+     * returns an int that encode an error code
+     * 0 being no errors
+     * 
+     */
+    int save_to_file(std::string filename);
+    int load_from_file(std::string filename);
 
     void translate_world_view_position(chunk_coordonate&, int&, int&, int&);
     void translate_world_view_wposition(int&, int&, int&);

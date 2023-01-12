@@ -1,5 +1,4 @@
 #include <game.hpp>
-#include <glload/gl_load.h>
 
 int main(int argc, char *argv[])
 {
