@@ -593,9 +593,9 @@ int World::save_to_file(std::string filename) {
     fwrite(&(tmp.y), sizeof(chunk_coordonate::y), 1, file);
     fwrite(&(tmp.z), sizeof(chunk_coordonate::z), 1, file);
 
-    // std::cout << "max_chunk_coord.x = " << tmp.x << std::endl;
-    // std::cout << "max_chunk_coord.y = " << tmp.y << std::endl;
-    // std::cout << "max_chunk_coord.z = " << tmp.z << std::endl;
+    std::cout << "max_chunk_coord.x = " << tmp.x << std::endl;
+    std::cout << "max_chunk_coord.y = " << tmp.y << std::endl;
+    std::cout << "max_chunk_coord.z = " << tmp.z << std::endl;
 
 
     for (int x = 0; x < tmp.x; x++) {
@@ -605,6 +605,7 @@ int World::save_to_file(std::string filename) {
                     case CHUNK_EMPTY: {// chunk is empty so we write a 0
                         Uint8 empty = 0;
                         fwrite(&(empty), sizeof(empty), 1, file);
+                        // printf("wrote: %02x\n", empty);
                         break;
                     }
 
@@ -614,6 +615,9 @@ int World::save_to_file(std::string filename) {
                         fwrite(&(non_uniform), sizeof(non_uniform), 1, file);
                         Uint8 current_id = chunk[x][y][z].block[0][0][0].id;
                         Uint16 current_count = 0;
+                        // std::cout << "current_count = " << current_count << std::endl;
+                        // std::cout << "current_id = " << (int)chunk[x][y][z].block[0][0][0].id << std::endl;
+                        // std::cout << "x y z: " << x << ' ' << y << ' ' << z << std::endl;
                         for (int i = 0; i < CHUNK_SIZE; i++) {
                             for (int j = 0; j < CHUNK_SIZE; j++) {
                                 for (int k = 0; k < CHUNK_SIZE; k++) {
@@ -623,8 +627,14 @@ int World::save_to_file(std::string filename) {
                                     else {
                                         fwrite(&(current_count), sizeof(current_count), 1, file);
                                         fwrite(&(current_id), sizeof(current_id), 1, file);
+                                        
                                         // std::cout << "current_count = " << current_count << std::endl;
                                         // std::cout << "current_id = " << (int)current_id << std::endl;
+
+                                        // printf("wrote: %02x %02x\n", current_count >> 8, current_count & 0xff);
+                                        // printf("wrote: %02x\n", current_id);
+                                        
+                                        
                                         current_id = chunk[x][y][z].block[i][j][k].id;
                                         current_count = 1;
                                     }
@@ -633,8 +643,12 @@ int World::save_to_file(std::string filename) {
                         }
                         fwrite(&(current_count), sizeof(current_count), 1, file);
                         fwrite(&(current_id), sizeof(current_id), 1, file);
+
                         // std::cout << "current_count = " << current_count << std::endl;
                         // std::cout << "current_id = " << (int)current_id << std::endl;
+
+                        // printf("wrote: %02x %02x\n", current_count >> 8, current_count & 0xff);
+                        // printf("wrote: %02x\n", current_id);
                         break;
                     }
 
@@ -642,6 +656,8 @@ int World::save_to_file(std::string filename) {
                         Uint8 full = 1;
                         fwrite(&(full), sizeof(full), 1, file);
                         fwrite(&(chunk[x][y][z].block[0][0][0].id), sizeof(chunk[x][y][z].block[0][0][0].id), 1, file);
+                        // printf("wrote: %02x\n", full);
+                        // printf("wrote: %02x\n", chunk[x][y][z].block[0][0][0].id);
                         break;   
                     }
                 }
@@ -655,13 +671,15 @@ int World::save_to_file(std::string filename) {
 }
 
 void fill_chunk(chunk* chunk, Uint8 id) {
-    for (int i = 0; i < CHUNK_SIZE; i++) {
-        for (int j = 0; j < CHUNK_SIZE; j++) {
-            for (int k = 0; k < CHUNK_SIZE; k++) {
-                chunk->block[i][j][k].id = id;
-            }
-        }
-    }
+    // for (int i = 0; i < CHUNK_SIZE; i++) {
+    //     for (int j = 0; j < CHUNK_SIZE; j++) {
+    //         for (int k = 0; k < CHUNK_SIZE; k++) {
+    //             chunk->block[i][j][k].id = id;
+    //         }
+    //     }
+    // }
+
+    memset(chunk->block, id, CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE * sizeof(block));
 }
 
 int World::load_from_file(std::string filename) {
@@ -670,16 +688,6 @@ int World::load_from_file(std::string filename) {
         std::cout << "Error opening file " << filename << "\n";
         return SAVE_ERROR_FILE_NOT_OPEN;
     }
-
-    // if (chunk) {
-    //     for (int x = 0; x < max_chunk_coord.x; x++) {
-    //         for (int y = 0; y < max_chunk_coord.y; y++) {
-    //             delete[] chunk[x][y];
-    //         }
-    //         delete[] chunk[x];
-    //     }
-    //     delete[] chunk;
-    // }
 
 
 
@@ -712,8 +720,8 @@ int World::load_from_file(std::string filename) {
                     case 2: // chunk is not uniform
                         // RLE
                         chunk[x][y][z].compress_value = CHUNK_NON_UNIFORM;
-                        Uint8 current_id;
-                        Uint16 current_count;
+                        Uint8 current_id = 0;
+                        Uint16 current_count = 0;
                         for (int i = 0; i < CHUNK_SIZE; i++) {
                             for (int j = 0; j < CHUNK_SIZE; j++) {
                                 for (int k = 0; k < CHUNK_SIZE; k++) {
