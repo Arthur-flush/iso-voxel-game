@@ -120,7 +120,7 @@ void Game::init(GPU_Target* _screen)
 void Game::input()
 {
     SDL_Event event;
-
+    int status;
     while(SDL_PollEvent(&event))
     {
         switch(event.key.type)
@@ -152,6 +152,42 @@ void Game::input()
                         case SDLK_F5 : 
                             RE.shader_features ^= SFEATURE_BLOOM;
                             break;
+                        
+                        case SDLK_F6: {
+                            // time the save using chrono
+                            auto start = std::chrono::high_resolution_clock::now();
+
+                            status = world.save_to_file("test.worldsave");
+                            
+                            auto end = std::chrono::high_resolution_clock::now();
+                            std::chrono::duration<double> elapsed = end - start;
+                            if(status == 0)
+                                std::cout << "world saved !\n" << "elapsed time : " << elapsed.count() * 1000 << "ms\n";
+                            else
+                                std::cout << "world save failed !\n";
+                            break;
+                        }
+
+                        case SDLK_F7: {
+                            auto start = std::chrono::high_resolution_clock::now();
+
+                            status = world.load_from_file("test.worldsave");
+
+                            if(status == 0) {
+                                auto end = std::chrono::high_resolution_clock::now();
+                                std::chrono::duration<double> elapsed = end - start;
+                                std::cout << "world loaded !\n" << "elapsed time : " << elapsed.count() * 1000 << "ms\n";
+                                RE.projection_grid.init_pos(world.max_chunk_coord.x, world.max_chunk_coord.y, world.max_chunk_coord.z);
+                                RE.world = world;
+                                world.compress_all_chunks();
+                                GameEvent.add_nfs_event(NFS_OP_ALL_BLOCK_VISIBLE);
+                                GameEvent.add_nfs_event(NFS_OP_ALL_RENDER_FLAG);
+
+                            }
+                            else
+                                std::cout << "world load failed !\n";
+                            break;
+                        }
 
                         case SDLK_0 :
                             RE.highlight_mode  = HIGHLIGHT_NONE;

@@ -9,7 +9,7 @@
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_thread.h>
-#include <SDL_gpu.h>
+#include <SDL2/SDL_gpu.h>
 
 #include <render_engine.hpp>
 #include <constants.hpp>
