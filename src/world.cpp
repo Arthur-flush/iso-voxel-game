@@ -637,6 +637,16 @@ int World::save_to_file(std::string filename) {
 
 }
 
+void fill_chunk(chunk* chunk, Uint8 id) {
+    for (int i = 0; i < CHUNK_SIZE; i++) {
+        for (int j = 0; j < CHUNK_SIZE; j++) {
+            for (int k = 0; k < CHUNK_SIZE; k++) {
+                chunk->block[i][j][k].id = id;
+            }
+        }
+    }
+}
+
 int World::load_from_file(std::string filename) {
     std::ifstream file(filename);
     if (!file.is_open()) {
@@ -654,8 +664,6 @@ int World::load_from_file(std::string filename) {
     //     delete[] chunk;
     // }
 
-    chunk_coordonate world_size = {32, 32, 12};
-    init(world_size.x, world_size.y, world_size.z);
 
 
     chunk_coordonate max_chunk_coord;
@@ -664,22 +672,27 @@ int World::load_from_file(std::string filename) {
     file.read((char*)&(max_chunk_coord.y), sizeof(chunk_coordonate::y));
     file.read((char*)&(max_chunk_coord.z), sizeof(chunk_coordonate::z));
 
+    init(max_chunk_coord.x, max_chunk_coord.y, max_chunk_coord.z);
+
     for (int x = 0; x < max_chunk_coord.x; x++) {
         for (int y = 0; y < max_chunk_coord.y; y++) {
             for (int z = 0; z < max_chunk_coord.z; z++) {
                 Uint8 compress_value;
                 file.read((char*)&(compress_value), sizeof(compress_value));
                 switch (compress_value) {
-                    case 0: // chunk is empty so we write a 0
+                    case 0: // chunk is empty
                         chunk[x][y][z].compress_value = CHUNK_EMPTY;
+                        fill_chunk(&(chunk[x][y][z]), 0);
                         break;
                     
-                    case 1: // chunk is full of the same block so we write a 1 and the block id
-                        file.read((char*)&(chunk[x][y][z].block[0][0][0].id), 1);
-                        chunk[x][y][z].compress_value = chunk[x][y][z].block[0][0][0].id;
+                    case 1: // chunk is full of the same block
+                        Uint8 id;
+                        file.read((char*)&(id), 1);
+                        fill_chunk(&(chunk[x][y][z]), id);
+                        chunk[x][y][z].compress_value = id;
                         break;   
                     
-                    case 2: // chunk is not uniform so we write a 2 and we use "run length encoding" (RLE) to write the blocks ids
+                    case 2: // chunk is not uniform
                         // RLE
                         chunk[x][y][z].compress_value = CHUNK_NON_UNIFORM;
                         Uint8 current_id;

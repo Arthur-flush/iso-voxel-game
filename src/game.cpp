@@ -165,6 +165,7 @@ void Game::input()
                             status = world.load_from_file("test.worldsave");
                             if(status == 0) {
                                 std::cout << "world loaded !\n";
+                                RE.projection_grid.init_pos(world.max_chunk_coord.x, world.max_chunk_coord.y, world.max_chunk_coord.z);
                                 RE.world = world;
                                 world.compress_all_chunks();
                                 GameEvent.add_nfs_event(NFS_OP_ALL_BLOCK_VISIBLE);
