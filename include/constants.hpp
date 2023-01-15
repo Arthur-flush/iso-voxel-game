@@ -3,7 +3,6 @@
 
 #include <iostream>
 
-#define MAIN_GAME_VERSION "0.8.4"
 #define MAIN_GAME_VERSION "0.8.3"
 
 //////// WINDOW DEFAULT CONSTANTS ////////
