@@ -9,8 +9,8 @@
 #define SFEATURE_SHADOWS             8
 
 #define SHADOW_TOP      128
-#define SHADOW_LEFT     64
-#define SHADOW_RIGHT    32
+#define SHADOW_LEFT      64
+#define SHADOW_RIGHT     32
 #define HIDE_PART_LEFT    4
 #define HIDE_PART_RIGHT   2
 #define HIDE_PART_BOTTOM  1
@@ -23,6 +23,7 @@ layout (location = 5) uniform ivec4 win_const;
 layout (location = 6) uniform float sprite_size;
 layout (location = 7) uniform int block_size;
 layout (location = 8) uniform int atlas_size;
+layout (location = 9) uniform int max_height_render;
 
 uint render_flagsl;
 uint render_flagsr;
@@ -207,7 +208,7 @@ void handle_water(vec4 pixel)
 
     vec2 screen_pos = vec2(gl_FragCoord.x/1920, (gl_FragCoord.y/1080));
     screen_pos = dist(screen_pos);
-    vec4 pixel_world = texture2D(world, screen_pos);
+    vec4 pixel_world = texture(world, screen_pos);
 
 
     pixel.rgb = rgb2hsv(pixel.rgb);
@@ -242,7 +243,7 @@ void main (void)
     texCoord.x = float(int(MozCoord.x*atlas_size)%block_size)/block_size;
     texCoord.y = float(int(MozCoord.y*atlas_size)%block_size)/block_size;
 
-    pixel = texture2D(tex, MozCoord);
+    pixel = texture(tex, MozCoord);
     // pixel = vec4(0.5, 0.5, 0.5, 1.0); // debug
 
     if(pixel.a == 0) discard; // discarding invisble fragments
@@ -257,16 +258,26 @@ void main (void)
 
     vec4 PixelTint = vec4(global_illumination.xyz, 1);
 
-    vec4 pixel_norm = texture2D(normal, texCoord);
+    vec4 pixel_norm = texture(normal, texCoord);
 
-    vec4 pixel_AO = texture2D(ao, texCoord);
+    vec4 pixel_AO = texture(ao, texCoord);
+
+    handle_depth();
 
     //////////////////////// FACE CULLING /////////////////////////
+    if(pixel_norm.g == 1 && render_flagsl < 128) discard;
+
     if(pixel_norm.r == 1 && render_flagsr < 128) discard;
 
-    if(pixel_norm.g == 1 && render_flagsl < 128) discard;
-    
-    if(pixel_norm.b == 1 && render_flagst < 128) discard;
+    if(pixel_norm.b == 1 && render_flagst < 128 && id != 240)
+    {
+        pixel.rgb = rgb2hsv(pixel.rgb);
+        // pixel.g = 0.0;
+        pixel.b = pixel.b/4;
+        fragColor.rgb = hsv2rgb(pixel.rgb);
+        fragColor.a = 1.0;
+        return;
+    }
     ////////////////////////////////////////////////////////////////
 
     /////////////////////////// SHADOWS ////////////////////////////
@@ -279,7 +290,6 @@ void main (void)
     //////////////////// TRANSPARENT FRAGMENTS /////////////////////
     if(pixel.a > 0 && pixel.a != 1)
     {
-        handle_depth();
         fragColor = pixel;
 
         if(id == 240)
@@ -312,9 +322,10 @@ void main (void)
     }
     /////////////////////////////////////////////////////////////////
 
-    // pixel = vec4(render_flagsl/256.0, render_flagsr/256.0, render_flagst/256.0, 1.0);
+    // float Vdepth = block_height*30.0/atlas_size;
+    // pixel = vec4(vec3(Vdepth, 1.0);
+    // pixel = vec4(shadows_flags/256.0, Vdepth, 0.0, 1.0);
 
     PixelTint.a = 1;
-    handle_depth();
     fragColor = pixel * PixelTint;
 }
