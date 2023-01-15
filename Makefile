@@ -1,9 +1,12 @@
 CC = g++
-CPPFLAGS = -Wall -g
-SDLFLAGS = -lmingw32 -lSDL2main -lSDL2 -lSDL2_gpu -g
+CPPFLAGS = -Wall
+SDLFLAGS = -lmingw32 -lSDL2main -lSDL2 -lSDL2_gpu -Ofast
 OBJ = obj/main.o obj/game.o obj/texture.o obj/render_engine.o obj/render_engine_2.o obj/world.o obj/multithreaded_event_handler.o obj/Shader.o obj/projection_grid.o
 INCLUDE = -Iinclude 
 EXEC = iso.exe
+DEL = del /Q /F
+# DEL = rm -f # linux
+default: $(EXEC)
 
 run :
 	$(EXEC)
@@ -20,5 +23,6 @@ obj/%.o : src/%.cpp
 PHONY : clean
 
 clean : 
-	rm -f $(EXEC) obj/*.o
+	$(DEL) $(EXEC) obj\*.o
+
 # modif le clean pour windows

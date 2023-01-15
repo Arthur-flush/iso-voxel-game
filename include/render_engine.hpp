@@ -6,6 +6,7 @@
 #include <SDL2/SDL.h>
 #include <SDL_gpu.h>
 
+#include <coords.hpp>
 #include <texture.hpp>
 #include <world.hpp>
 #include <constants.hpp>
@@ -13,6 +14,9 @@
 // #include <multithreaded_event_handler.hpp>
 
 #include <Shader.hpp>
+#include <coords.hpp>
+
+Uint64 Get_time_ms();
 
 class Multithreaded_Event_Handler;
 
@@ -29,11 +33,8 @@ struct Window_Variables
 
 struct Render_Engine
 {   
-    // Render_Engine();
     Render_Engine(World& _world);
 
-    // SDL_sem *RenderSemaphore;
-    // SDL_mutex *RenderMutex;
     SDL_Thread *SecondaryThread;
     Multithreaded_Event_Handler *GameEvent;
 
@@ -49,7 +50,7 @@ struct Render_Engine
 
     block_coordonate highlight_coord;
     world_coordonate highlight_wcoord;
-    // chunk_coordonate highlight1_coord;
+    
     chunk_coordonate max_render_coord;
 
     int highlight_mode;
@@ -61,15 +62,39 @@ struct Render_Engine
     Shader post_process_shader;
     Shader background_shader;
 
+    GPU_Target *screen2;
+    GPU_Image  *final_world_render;
+
+    GPU_Target *screen3;
+    GPU_Image  *opaque_world_render;
+
+    GPU_Target *background;
+    GPU_Image *background_image;
+
     std::shared_ptr<Texture> Textures[TEXTURE_MAX_NUMBER] = {NULL};
 
     long double block_onscreen_size;
     long double block_onscreen_half;
     long double block_onscreen_quarter;
-    void refresh_block_onscreen();
+    int max_height_render;
+
+    void refresh_sprite_size();
 
     void highlight_block();
     
+    projection_grid projection_grid;
+
+    bool shader_enable;
+    unsigned int shader_features;
+    unsigned int sprite_counter;
+
+    bool debug;
+    Uint64 timems;
+
+    int current_block_tmp;
+
+
+    /******** RENDER ***********************/
     void render_grid(); // old
 
     void render_world();
@@ -87,62 +112,41 @@ struct Render_Engine
     void render_highlighted_blocks();
 
     void render_frame();
+    /***************************************/
 
-    void refresh_block_visible(const chunk_coordonate&, const int, const int, const int);
-    void refresh_line_visible(int, int, int);
-    void refresh_pg_block_visible();
-    void refresh_all_block_visible();
-
-
-    ///// SHADERS, SOME REDUNDANT THINGS HERE /////
-    void set_block_renderflags(const chunk_coordonate&, int, int, int, bool);
+    /******** RENDER FLAGS *****************/
+    void refresh_all_render_flags2();
     void set_block_renderflags(char, int, int);
-    // void set_block_screen_renderflags();
-    
-    void set_block_shadow
-         (const chunk_coordonate&, 
-          const int, const int, const int);
-
-    void set_block_shadow_context
-         (unsigned char &, 
-          const chunk_coordonate&, 
-          const int, const int, const int);
-
     void refresh_block_render_flags
          (const chunk_coordonate&, 
           const int, const int, const int);
-
-    void refresh_all_render_flags();
-
     /***************************************/
+    
+    /******** BLOCK VISIBLE ****************/
+    void refresh_pg_block_visible();
+
+    void refresh_all_block_visible2();
+    void refresh_line_visible2(int, int, int);
+    void refresh_block_visible
+         (const chunk_coordonate&, 
+          const int, const int, const int);
+    /***************************************/
+
+    /******** SHADOWS **********************/
     void set_shadow_context(SDL_Color&, int, int, int);
     void set_block_shadow_context2(int, int, int);
-    void refresh_all_render_flags2();
-    void refresh_all_block_visible2();
-    void refresh_line_visible2(int, int, int, world_coordonate&);
+
+    void refresh_line_shadows(int);
     /***************************************/
 
-    GPU_Target *screen2;
-    GPU_Image  *final_world_render;
+    // refresh every block in the progrejection grid
+    // when the max_height_render is changed
+    void refresh_pg_onscreen();
+    void refresh_pg_MHR();
 
-    GPU_Target *screen3;
-    GPU_Image  *opaque_world_render;
+    void rotate_camera(int);
 
-    GPU_Target *background;
-    GPU_Image *background_image;
-
-    projection_grid projection_grid;
-
-    bool shader_enable;
-    unsigned int shader_features;
-    unsigned int sprite_counter;
-
-    bool debug;
-    Uint64 timems;
-
-    int current_block_tmp;
-
-
+    void highlight_block2();
 };
 
 

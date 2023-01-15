@@ -3,7 +3,7 @@
 
 #include <iostream>
 
-#define MAIN_GAME_VERSION "0.8.2"
+#define MAIN_GAME_VERSION "0.8.4"
 
 //////// WINDOW DEFAULT CONSTANTS ////////
 #define DEFAULT_WINDOWS_W 1920
@@ -49,11 +49,6 @@ tested floats exemple :
 #define SHADOW_TOP      128
 #define SHADOW_LEFT      64
 #define SHADOW_RIGHT     32
-#define test 0b00011111
-
-#define HIDE_PART_LEFT    4 // old
-#define HIDE_PART_RIGHT   2 // old
-#define HIDE_PART_BOTTOM  1 // old
 
 //////// TEXTURES ////////
 #define BLOCK_TEXTURE_SIZE    256
