@@ -3,26 +3,7 @@
 
 #include <SDL2/SDL.h>
 #include <constants.hpp>
-
-struct chunk_coordonate
-{
-    int x;
-    int y;
-    int z;
-};
-
-struct world_coordonate
-{
-    int x;
-    int y;
-    int z;
-};
-
-struct block_coordonate
-{
-    chunk_coordonate chunk;
-    int x, y, z;
-};
+#include <coords.hpp>
 
 struct block
 {

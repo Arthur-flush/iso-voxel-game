@@ -14,6 +14,7 @@ layout (location = 5) uniform ivec4 win_const;
 layout (location = 6) uniform float sprite_size;
 layout (location = 7) uniform int block_size;
 layout (location = 8) uniform int atlas_size;
+layout (location = 9) uniform int max_height_render;
 
 in vec2 VMozCoord[];
 in vec4 Vcolor[];
@@ -91,11 +92,6 @@ void main()
                 VPos.x += (sprite_size/2)*(i);
                 VPos.y += (sprite_size/4)*(i);
             }
-            // if(projection_grid_face == 0)
-            // {
-            //     // axe z
-            //     VPos.y += (sprite_size/2)*(i);
-            // }
 
             gl_Position = gpu_ModelViewProjectionMatrix * vec4(VPos, 1);
 
