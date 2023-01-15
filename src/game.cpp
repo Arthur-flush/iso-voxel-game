@@ -79,14 +79,14 @@ void Game::init(GPU_Target* _screen)
                     world.chunk[x][y][z].block[i][j][k].id = BLOCK_SAND;
             }
 
-            if(wz < 42 && !world.chunk[x][y][z].block[i][j][k].id)
-                world.chunk[x][y][z].block[i][j][k].id = BLOCK_WATER;
+            // if(wz < 42 && !world.chunk[x][y][z].block[i][j][k].id)
+            //     world.chunk[x][y][z].block[i][j][k].id = BLOCK_WATER;
 
             if(wz < 42 && (wx == world.max_block_coord.x-1 || wy == world.max_block_coord.y-1))
                 world.chunk[x][y][z].block[i][j][k].id = BLOCK_DEBUG;
             
-            if(wx == 150)
-                world.chunk[x][y][z].block[i][j][k].id = BLOCK_DEBUG;
+            if(wx == 150 && wz > 43)
+                world.chunk[x][y][z].block[i][j][k].id = BLOCK_GLASS;
 
             // if(wz == 0 && wx == 15)
             //     world.chunk[x][y][z].block[i][j][k].id = BLOCK_GREEN;
@@ -231,17 +231,21 @@ void Game::input()
                             break;
 
                         case SDLK_LEFT :
-                            Current_block = Current_block == BLOCK_SAND ? 0 : Current_block;
-                            Current_block = (Current_block+1)%5;
-                            Current_block = Current_block == 0 ? BLOCK_SAND : Current_block;
-                            RE.current_block_tmp = Current_block;
+                            Current_block++;
+                            if (Current_block % sizeof(BLOCK_PALETTE) == 0)
+                                Current_block = 0;
+                            RE.current_block_tmp = BLOCK_PALETTE[Current_block];
+                            std::cout << "Current block id: " << (int)BLOCK_PALETTE[Current_block] << '\n';
+                            std::cout << "Current block   : " << Current_block << '\n';
                             break;
                         
                         case SDLK_RIGHT :
-                            Current_block = Current_block == BLOCK_SAND ? 5 : Current_block;
-                            Current_block = (Current_block-1)%5;
-                            Current_block = Current_block == 0 ? BLOCK_SAND : Current_block;
-                            RE.current_block_tmp = Current_block;
+                            Current_block--;
+                            if (Current_block == 65535)
+                                Current_block = sizeof(BLOCK_PALETTE) - 1;
+                            RE.current_block_tmp = BLOCK_PALETTE[Current_block];
+                            std::cout << "Current block id: " << (int)BLOCK_PALETTE[Current_block] << '\n';
+                            std::cout << "Current block   : " << Current_block << '\n';
                             break;
 
                         case SDLK_TAB :

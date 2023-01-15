@@ -1196,6 +1196,7 @@ void Render_Engine::render_frame()
 
     // GPU_SetUniformf(1, timems);
     int win_const[4] = {screen->w, screen->h, target.x, target.y};
+    // std::cout << "target.x: " << target.x << " target.y: " << target.y << std::endl; 
     // GPU_SetUniformiv(5, 4, 1, win_const);
 
     // GPU_SetShaderImage(Textures[BACKGROUND_SUNSET]->ptr, 6, 6); // donne iChannel0
@@ -1219,6 +1220,7 @@ void Render_Engine::render_frame()
     GPU_SetUniformfv(4, 4, 1, global_illumination);
     GPU_SetUniformiv(5, 4, 1, win_const);
     GPU_SetUniformf(6, block_onscreen_size);
+    // std::cout << "block_onscreen_size: " << block_onscreen_size << std::endl;
     GPU_SetUniformi(7, BLOCK_TEXTURE_SIZE);
     GPU_SetUniformi(8, MOSAIC_TEXTURE_SIZE);
 
