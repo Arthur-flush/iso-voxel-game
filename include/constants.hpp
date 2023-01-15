@@ -100,7 +100,7 @@ const Uint8 BLOCK_PALETTE[] = {
     BLOCK_GREEN,
     BLOCK_SAND,
     // BLOCK_WATER,  // transparency not working rn  
-    // BLOCK_GLASS
+    BLOCK_GLASS
 };
 
 
