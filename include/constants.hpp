@@ -3,7 +3,7 @@
 
 #include <iostream>
 
-#define MAIN_GAME_VERSION "0.8.3"
+#define MAIN_GAME_VERSION "0.9.0"
 
 //////// WINDOW DEFAULT CONSTANTS ////////
 #define DEFAULT_WINDOWS_W 1920
@@ -32,6 +32,10 @@ tested floats exemple :
 
 //////// CHUNKS ////////
 #define CHUNK_SIZE 8
+
+//////// SAVE/LOAD ERROR CODES ////////
+#define SAVE_ERROR_NONE 0
+#define SAVE_ERROR_FILE_NOT_OPEN 1
 
 //////// HIGHLIGHT ////////
 #define HIGHLIGHT_NONE        0

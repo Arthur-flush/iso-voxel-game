@@ -2,7 +2,7 @@
 #define TEXTURE_HPP
 
 #include <SDL2/SDL.h>
-#include <SDL_gpu.h>
+#include <SDL2/SDL_gpu.h>
 
 #include <game.hpp>
 #include <constants.hpp>

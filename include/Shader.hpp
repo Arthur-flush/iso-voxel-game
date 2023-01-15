@@ -10,7 +10,7 @@ MIT License
 
 #include <iostream>
 #include <SDL2/SDL.h>
-#include <SDL_gpu.h>
+#include <SDL2/SDL_gpu.h>
 #include <string>
 #include <map>
 

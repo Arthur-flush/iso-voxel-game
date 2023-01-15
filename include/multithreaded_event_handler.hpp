@@ -4,7 +4,7 @@
 #include <queue>
 
 #include <SDL2/SDL.h>
-#include <SDL_gpu.h>
+#include <SDL2/SDL_gpu.h>
 #include <blocks.hpp>
 #include <texture.hpp>
 #include <render_engine.hpp>

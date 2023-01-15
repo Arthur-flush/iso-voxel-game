@@ -61,6 +61,14 @@ struct World
     /********************************************************/
 
     bool modify_block(world_coordonate, int);
+
+    /* load and save functions
+     * returns an int that encode an error code
+     * 0 being no errors
+     * 
+     */
+    int save_to_file(std::string filename);
+    int load_from_file(std::string filename);
 };
 
 #endif

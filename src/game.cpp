@@ -127,6 +127,7 @@ void Game::input()
 {
     SDL_Event event;
     SDL_Keymod km = SDL_GetModState();
+    int status;
 
     while(SDL_PollEvent(&event))
     {
@@ -225,20 +226,11 @@ void Game::input()
                                 if(RE.max_height_render > world.max_block_coord.z)
                                     RE.max_height_render = world.max_block_coord.z;
 
-                                // RE.refresh_pg_MHR();
-
                                 RE.projection_grid.save_curr_interval();
                                 GameEvent.drop_all_nfs_event();
                                 GameEvent.add_nfs_event(NFS_OP_PG_MHR);
                                 GameEvent.add_nfs_event(NFS_OP_ALL_BLOCK_VISIBLE);
                                 GameEvent.add_nfs_event(NFS_OP_ALL_RENDER_FLAG);
-
-                                // RE.refresh_all_block_visible2();
-                                // RE.refresh_all_render_flags2();
-                                // RE.projection_grid.refresh_all_identical_line();
-
-                                // GameEvent.add_nfs_event(NFS_OP_ALL_BLOCK_VISIBLE);
-                                // GameEvent.add_nfs_event(NFS_OP_ALL_RENDER_FLAG);
                             }
                             break;
 
@@ -249,26 +241,63 @@ void Game::input()
                                 if(RE.max_height_render < 0)
                                     RE.max_height_render = 0;
 
-                                // RE.refresh_pg_MHR();
-
                                 RE.projection_grid.save_curr_interval();
                                 GameEvent.drop_all_nfs_event();
-                                // RE.refresh_pg_onscreen();
-                                // RE.refresh_pg_block_visible();
+
                                 GameEvent.add_nfs_event(NFS_OP_PG_ONSCREEN);
                                 GameEvent.add_nfs_event(NFS_OP_PG_MHR);
                                 GameEvent.add_nfs_event(NFS_OP_ALL_BLOCK_VISIBLE);
                                 GameEvent.add_nfs_event(NFS_OP_ALL_RENDER_FLAG);
-
-                                // RE.refresh_all_block_visible2();
-                                // RE.refresh_all_render_flags2();
-                                // RE.projection_grid.refresh_all_identical_line();
-
-                                // GameEvent.add_nfs_event(NFS_OP_ALL_BLOCK_VISIBLE);
-                                // GameEvent.add_nfs_event(NFS_OP_ALL_RENDER_FLAG);
                             }
                             break;
-                        
+
+                        case SDLK_F6:
+                        {
+                            // time the save using chrono
+                            // Uint64 start = Get_time_ms();
+
+                            status = world.save_to_file("test.worldsave");
+
+                            if(status == 0)
+                            {
+                                std::cout << "world saved !\n";
+                            }
+                            else
+                            {
+                                std::cout << "failded to save world :(\n";
+                            }
+                            break;
+                        }
+
+                        case SDLK_F7: {
+                            Uint64 start = Get_time_ms();
+
+                            status = world.load_from_file("test.worldsave");
+
+                            if(status == 0) 
+                            {
+                                std::cout << "world load successfully :)\n";
+
+                                RE.world = world;
+                                world.compress_all_chunks();
+
+
+                                GameEvent.drop_all_nfs_event();
+
+                                RE.projection_grid.clear();
+                                RE.projection_grid.save_curr_interval();
+                                // GameEvent.add_nfs_event(NFS_OP_PG_ONSCREEN);
+                                RE.refresh_pg_onscreen();
+                                RE.refresh_pg_block_visible();
+                                GameEvent.add_nfs_event(NFS_OP_ALL_BLOCK_VISIBLE);
+                                GameEvent.add_nfs_event(NFS_OP_ALL_RENDER_FLAG);
+
+                            }
+                            else
+                                std::cout << "world load failed ._. !\n";
+                            break;
+                        }
+
                         case SDLK_r :
                             RE.projection_grid.save_curr_interval();
                             RE.refresh_pg_onscreen();
