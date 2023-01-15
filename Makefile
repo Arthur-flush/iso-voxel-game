@@ -11,7 +11,9 @@ default: $(EXEC)
 run :
 	$(EXEC)
 
-install : $(OBJ)
+install: $(EXEC)
+
+$(EXEC) : $(OBJ)
 	$(CC) $(OBJ) -o $(EXEC) $(SDLFLAGS)
 
 obj/main.o : main.cpp
@@ -20,7 +22,7 @@ obj/main.o : main.cpp
 obj/%.o : src/%.cpp
 	$(CC) -c $(CPPFLAGS) $(SDLFLAGS) $(INCLUDE) $< -o $@ 
 
-PHONY : clean
+PHONY : clean default run install
 
 clean : 
 	$(DEL) $(EXEC) obj\*.o
