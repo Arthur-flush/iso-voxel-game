@@ -2,9 +2,7 @@
 #define PROJECTION_GRID_HPP
 
 #include <SDL2/SDL.h>
-
 #include <constants.hpp>
-#include <coords.hpp>
 #include <blocks.hpp>
 
 #define IDENDICAL_LINE_MAX 41 //41
@@ -26,8 +24,6 @@ struct screen_block
 
     bool is_on_screen;
 
-    bool is_updated; // old
-
     SDL_Color render_flags;
     SDL_Color render_flags_transparent;
 
@@ -46,7 +42,6 @@ struct projection_grid
     public :
         int size[3][2];
         interval visible_frags[3][2];
-        interval visible_frags_save[3][2];
         screen_block **pos[3];
 
         projection_grid();
@@ -62,10 +57,6 @@ struct projection_grid
         void refresh_visible_frags(pixel_coord, Uint16, Uint16, long double);
 
         void refresh_all_identical_line();
-
-        void save_curr_interval();
-
-        void clear();
 };
 
 #endif

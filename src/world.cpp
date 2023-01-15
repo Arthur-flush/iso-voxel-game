@@ -1,4 +1,6 @@
 #include <game.hpp>
+#include <cstdio>
+#include "multithreaded_event_handler.hpp"
 
 World::World(){chunk = NULL;};
 
@@ -162,7 +164,6 @@ world_coordonate World::convert_coord(block_coordonate bc)
 
 void World::translate_world_view_position(chunk_coordonate& coord, int& x, int& y, int& z)
 {
-    // Exchange x and y, then reverse y
     if(world_view_position == 1)
     {
         int ytmp = y;
@@ -174,10 +175,10 @@ void World::translate_world_view_position(chunk_coordonate& coord, int& x, int& 
         coord.y = coord.x;
         coord.x = cytmp;
 
-        coord.y = max_chunk_coord.y-coord.y;
-        y = CHUNK_SIZE-1-y;
+        ytmp = max_block_coord.y - y - coord.y*CHUNK_SIZE;
+        y = ytmp%CHUNK_SIZE;
+        coord.y = ytmp/CHUNK_SIZE;
     }
-    // Exchange x and y, then reverse x
     else if(world_view_position == 3)
     {
         int ytmp = y;
@@ -189,17 +190,20 @@ void World::translate_world_view_position(chunk_coordonate& coord, int& x, int& 
         coord.y = coord.x;
         coord.x = cytmp;
 
-        coord.x = max_chunk_coord.x-coord.x;
-        x = CHUNK_SIZE-1-x;
+        ytmp = max_block_coord.x - x - coord.x*CHUNK_SIZE;
+        x = ytmp%CHUNK_SIZE;
+        coord.x = ytmp/CHUNK_SIZE;
     }
-    // Reverse both x and y
     else if(world_view_position == 2)
     {
-        coord.y = max_chunk_coord.y-coord.y;
-        y = CHUNK_SIZE-1-y;
-    
-        coord.x = max_chunk_coord.x-coord.x;
-        x = CHUNK_SIZE-1-x;
+        y = max_block_coord.y - y - coord.y*CHUNK_SIZE;
+        x = max_block_coord.x - x - coord.x*CHUNK_SIZE;
+
+        coord.y = y/CHUNK_SIZE;
+        coord.x = x/CHUNK_SIZE;
+        
+        y = y%CHUNK_SIZE;
+        x = x%CHUNK_SIZE;
     }
 }
 
@@ -212,7 +216,7 @@ void World::translate_world_view_wposition(int& x, int& y, int& z)
         y = x;
         x = ytmp;
 
-        y = max_block_coord.y-1-y;
+        y = max_block_coord.y-y;
     }
     else if(world_view_position == 3)
     {
@@ -221,39 +225,12 @@ void World::translate_world_view_wposition(int& x, int& y, int& z)
         y = x;
         x = ytmp;
 
-        x = max_block_coord.x-1-x;
+        x = max_block_coord.x-x;
     }
     else if(world_view_position == 2)
     {
-        y = max_block_coord.y-1-y;
-        x = max_block_coord.x-1-x;
-    }
-}
-
-void World::translate_world_view_wpositionf(float& x, float& y)
-{
-    if(world_view_position == 1)
-    {
-        float ytmp = y;
-
-        y = x;
-        x = ytmp;
-
-        y = max_block_coord.y-1.0-y;
-    }
-    else if(world_view_position == 3)
-    {
-        float ytmp = y;
-
-        y = x;
-        x = ytmp;
-
-        x = max_block_coord.x-1.0-x;
-    }
-    else if(world_view_position == 2)
-    {
-        y = max_block_coord.y-1.0-y;
-        x = max_block_coord.x-1.0-x;
+        y = max_block_coord.y-y;
+        x = max_block_coord.x-x;
     }
 }
 
@@ -305,14 +282,14 @@ void World::compress_all_chunks()
     }
 }
 
-Uint32 World::shadow_caster_presence(world_coordonate start)
+Uint32 World::line_presenceF(world_coordonate start, world_coordonate jump)
 {
     // No valid coord checking
     // Positions arent output
     // Both opaque and transparent blocks are checked, but the function ends when an opaque is found
     // Jumps are positive
 
-    if(start.x > max_block_coord.x || start.y > max_block_coord.y || start.z > max_block_coord.z)
+    if(start.x > max_block_coord.x || start.y > max_block_coord.y || start.x > max_block_coord.z)
         return 0;
 
     struct chunk* c;
@@ -321,10 +298,7 @@ Uint32 World::shadow_caster_presence(world_coordonate start)
     Uint16 tid = BLOCK_EMPTY;
     bool chunk_end = false;
 
-    if(bc.chunk.y > max_chunk_coord.y)
-        return 0;
-
-    while(bc.chunk.x <= max_chunk_coord.x && bc.chunk.z <= max_chunk_coord.z)
+    while(bc.chunk.x <= max_chunk_coord.x && bc.chunk.y <= max_chunk_coord.y && bc.chunk.z <= max_chunk_coord.z)
     {
         c = &chunk[bc.chunk.x][bc.chunk.y][bc.chunk.z];
 
@@ -348,18 +322,25 @@ Uint32 World::shadow_caster_presence(world_coordonate start)
                     return oid + (tid<<8);
                 }
 
-                bc.x += 1;
-                bc.z += 1;
+                bc.x += jump.x;
+                bc.y += jump.y;
+                bc.z += jump.z;
 
                 if(bc.x == CHUNK_SIZE)
                 {
-                    bc.chunk.x ++;
+                    bc.chunk.x += jump.x;
                     bc.x = 0;
+                    chunk_end = true;
+                }
+                if(bc.y == CHUNK_SIZE)
+                {
+                    bc.chunk.y += jump.y;
+                    bc.y = 0;
                     chunk_end = true;
                 }
                 if(bc.z == CHUNK_SIZE)
                 {
-                    bc.chunk.z ++;
+                    bc.chunk.z += jump.z;
                     bc.z = 0;
                     chunk_end = true;
                 }
@@ -374,21 +355,32 @@ Uint32 World::shadow_caster_presence(world_coordonate start)
             if(c->compress_value != BLOCK_EMPTY)
                 tid = c->compress_value;
             
-            int max = bc.x > bc.z ? bc.x : bc.z;
-            max = CHUNK_SIZE-max;
+            chunk_end = false;
 
-            bc.x += max;
-            bc.z += max;
+            while(!chunk_end)
+            {
+                bc.x += jump.x;
+                bc.y += jump.y;
+                bc.z += jump.z;
 
-            if(bc.x == CHUNK_SIZE)
-            {
-                bc.chunk.x ++;
-                bc.x = 0;
-            }
-            if(bc.z == CHUNK_SIZE)
-            {
-                bc.chunk.z ++;
-                bc.z = 0;
+                if(bc.x == CHUNK_SIZE)
+                {
+                    bc.chunk.x += jump.x;
+                    bc.x = 0;
+                    chunk_end = true;
+                }
+                if(bc.y == CHUNK_SIZE)
+                {
+                    bc.chunk.y += jump.y;
+                    bc.y = 0;
+                    chunk_end = true;
+                }
+                if(bc.z == CHUNK_SIZE)
+                {
+                    bc.chunk.z += jump.z;
+                    bc.z = 0;
+                    chunk_end = true;
+                }
             }
 
         }
@@ -398,23 +390,192 @@ Uint32 World::shadow_caster_presence(world_coordonate start)
     return 0;
 }
 
-bool World::modify_block(world_coordonate wcoord, int id)
+// line_presence World::line_visiblePR(world_coordonate start, world_coordonate jump)
+// {
+//     // Valid coord checking
+//     // Positions are output
+//     // Both opaque and transparent blocks are checked, but the function ends when an opaque is found
+//     // Jumps can be negative
+
+//     line_presence lp = {0};
+
+//     if(start.x > max_block_coord.x || start.y > max_block_coord.y || start.z > max_block_coord.z)
+//     {
+//         std::cout << "\nline_visiblePR : Wrong position given at " << start.x << ' ' << start.y << ' ' << start.z;
+//         return lp;
+//     }
+
+//     struct chunk* c;
+//     bool chunk_end = false;
+
+//     int diff = max_block_coord.z - start.z;
+//     start.x += diff;
+//     start.y += diff;
+//     start.z += diff;
+
+//     int id;
+//     block_coordonate bc = convert_wcoord(start.x, start.y, start.z);
+
+//     while
+//     (
+//           bc.chunk.x >= 0 && bc.chunk.x <= max_chunk_coord.x &&
+//           bc.chunk.y >= 0 && bc.chunk.y <= max_chunk_coord.y &&
+//           bc.chunk.x >= 0
+//     ){
+//         c = &chunk[bc.chunk.x][bc.chunk.y][bc.chunk.z];
+
+//         if(c->compress_value == CHUNK_NON_UNIFORM)
+//         {
+//             chunk_end = false;
+
+                
+//             while(!chunk_end)
+//             {
+//                 id = c->block[bc.x][bc.y][bc.z].id;
+
+//                 if(id >= BLOCK_TRANSPARENT_LIMIT && !lp.tid)
+//                 {
+//                     lp.tid = id;
+//                     lp.twcoord = convert_coord(bc);
+//                 }
+//                 else if(id != BLOCK_EMPTY)
+//                 {
+//                     // std::cout << "yo\n";
+//                     lp.oid = id;
+//                     lp.owcoord = convert_coord(bc);
+//                     return lp;
+//                 }
+
+//                 bc.x += jump.x;
+//                 bc.y += jump.y;
+//                 bc.z += jump.z;
+
+//                 if(bc.x == CHUNK_SIZE || bc.x == -1)
+//                 {
+//                     bc.chunk.x += jump.x;
+//                     bc.x = jump.x < 0 ? CHUNK_SIZE-1 : 0;
+//                     chunk_end = true;
+//                 }
+//                 if(bc.y == CHUNK_SIZE || bc.y == -1)
+//                 {
+//                     bc.chunk.y += jump.y;
+//                     bc.y = jump.y < 0 ? CHUNK_SIZE-1 : 0;
+//                     chunk_end = true;
+//                 }
+//                 if(bc.z == -1)
+//                 {
+//                     bc.chunk.z += jump.z;
+//                     bc.z = CHUNK_SIZE-1;
+//                     chunk_end = true;
+//                 }
+//             }
+//         }
+
+//         else if(c->compress_value != BLOCK_EMPTY && c->compress_value < BLOCK_TRANSPARENT_LIMIT)
+//         {
+//             // std::cout << "yo2\n";
+//             lp.oid = c->compress_value;
+//             lp.owcoord = convert_coord(bc);
+//             return lp;
+//         }
+
+//         else
+//         {
+//             if(c->compress_value != BLOCK_EMPTY && !lp.tid)
+//             {
+//                 lp.tid = c->compress_value;
+//                 lp.twcoord = convert_coord(bc);
+//             }
+            
+//             chunk_end = false;
+
+//             while(!chunk_end)
+//             {
+//                 bc.x += jump.x;
+//                 bc.y += jump.y;
+//                 bc.z += jump.z;
+
+//                 if(bc.x == CHUNK_SIZE || bc.x == -1)
+//                 {
+//                     bc.chunk.x += jump.x;
+//                     bc.x = jump.x < 0 ? CHUNK_SIZE-1 : 0;
+//                     chunk_end = true;
+//                 }
+//                 if(bc.y == CHUNK_SIZE || bc.y == -1)
+//                 {
+//                     bc.chunk.y += jump.y;
+//                     bc.y = jump.y < 0 ? CHUNK_SIZE-1 : 0;
+//                     chunk_end = true;
+//                 }
+//                 if(bc.z == -1)
+//                 {
+//                     bc.chunk.z += jump.z;
+//                     bc.z = CHUNK_SIZE-1;
+//                     chunk_end = true;
+//                 }
+//             }
+
+//         }
+//     }
+
+//     return lp;
+// }
+
+line_presence World::line_visiblePR(world_coordonate start, world_coordonate jump)
 {
-    translate_world_view_wposition(wcoord.x, wcoord.y, wcoord.z);
+    line_presence lp;
+    lp.oid = 0;
+    lp.tid = 0;
+    lp.owcoord = {0, 0, 0};
+    lp.twcoord = {0, 0, 0};
 
-    block_coordonate coord = convert_wcoord(wcoord.x, wcoord.y, wcoord.z);
+    if(start.x > max_block_coord.x || start.y > max_block_coord.y || start.z > max_block_coord.z)
+    {
+        std::cout << "\nline_visiblePR : Wrong position given at " << start.x << ' ' << start.y << ' ' << start.z;
+        return lp;
+    }
 
-    if(coord.x < min_chunk_coord.x || coord.x > max_chunk_coord.x ||
-       coord.y < min_chunk_coord.y || coord.y > max_chunk_coord.y ||
-       coord.z < min_chunk_coord.z || coord.z > max_chunk_coord.z)
-        return false;
+    int id;
+    block_coordonate bc;
+    world_coordonate wc;
+
+    while
+    (
+        start.x >= 0 && start.y >= 0 && start.z >= 0
+    ){
+        wc.x = start.x;
+        wc.y = start.y;
+        wc.z = start.z;
+
+        id = get_block_id_wcoord(wc.x, wc.y, wc.z);
+
+        if(id)
+        {
+            if(id < BLOCK_TRANSPARENT_LIMIT)
+            {
+                lp.oid = id;
+                lp.owcoord.x = wc.x;
+                lp.owcoord.y = wc.y;
+                lp.owcoord.z = wc.z;
+                return lp;
+            }
+            else if(!lp.tid)
+            {
+                lp.tid = id;
+                lp.twcoord.z = wc.z;
+            }
+        }
+
+
+        start.x --;
+        start.y --;
+        start.z --;
+    }
     
-    chunk[coord.chunk.x][coord.chunk.y][coord.chunk.z].block[coord.x][coord.y][coord.z].id = id;
-
-    compress_chunk(coord.chunk.x, coord.chunk.y, coord.chunk.z);
-
-    return true;
+    return lp;
 }
+
+
 
 int World::save_to_file(std::string filename) {
     FILE* file = fopen(filename.c_str(), "wb");
@@ -432,9 +593,9 @@ int World::save_to_file(std::string filename) {
     fwrite(&(tmp.y), sizeof(chunk_coordonate::y), 1, file);
     fwrite(&(tmp.z), sizeof(chunk_coordonate::z), 1, file);
 
-    // std::cout << "max_chunk_coord.x = " << tmp.x << std::endl;
-    // std::cout << "max_chunk_coord.y = " << tmp.y << std::endl;
-    // std::cout << "max_chunk_coord.z = " << tmp.z << std::endl;
+    std::cout << "max_chunk_coord.x = " << tmp.x << std::endl;
+    std::cout << "max_chunk_coord.y = " << tmp.y << std::endl;
+    std::cout << "max_chunk_coord.z = " << tmp.z << std::endl;
 
 
     for (int x = 0; x < tmp.x; x++) {
@@ -466,14 +627,14 @@ int World::save_to_file(std::string filename) {
                                     else {
                                         fwrite(&(current_count), sizeof(current_count), 1, file);
                                         fwrite(&(current_id), sizeof(current_id), 1, file);
-
+                                        
                                         // std::cout << "current_count = " << current_count << std::endl;
                                         // std::cout << "current_id = " << (int)current_id << std::endl;
 
                                         // printf("wrote: %02x %02x\n", current_count >> 8, current_count & 0xff);
                                         // printf("wrote: %02x\n", current_id);
-
-
+                                        
+                                        
                                         current_id = chunk[x][y][z].block[i][j][k].id;
                                         current_count = 1;
                                     }
@@ -548,14 +709,14 @@ int World::load_from_file(std::string filename) {
                         chunk[x][y][z].compress_value = CHUNK_EMPTY;
                         fill_chunk(&(chunk[x][y][z]), 0);
                         break;
-
+                    
                     case 1: // chunk is full of the same block
                         Uint8 id;
                         fread(&(id), sizeof(id), 1, file);
                         fill_chunk(&(chunk[x][y][z]), id);
                         chunk[x][y][z].compress_value = id;
                         break;   
-
+                    
                     case 2: // chunk is not uniform
                         // RLE
                         chunk[x][y][z].compress_value = CHUNK_NON_UNIFORM;
@@ -574,12 +735,12 @@ int World::load_from_file(std::string filename) {
                             }
                         }
                         break;
-
+                
                 }
             }
         }
     }
-
+    
     fclose(file);
     return SAVE_ERROR_NONE;
 }

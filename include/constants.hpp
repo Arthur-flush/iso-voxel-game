@@ -3,7 +3,7 @@
 
 #include <iostream>
 
-#define MAIN_GAME_VERSION "0.9.0"
+#define MAIN_GAME_VERSION "0.8.2"
 
 //////// WINDOW DEFAULT CONSTANTS ////////
 #define DEFAULT_WINDOWS_W 1920
@@ -33,10 +33,6 @@ tested floats exemple :
 //////// CHUNKS ////////
 #define CHUNK_SIZE 8
 
-//////// SAVE/LOAD ERROR CODES ////////
-#define SAVE_ERROR_NONE 0
-#define SAVE_ERROR_FILE_NOT_OPEN 1
-
 //////// HIGHLIGHT ////////
 #define HIGHLIGHT_NONE        0
 #define HIGHLIGHT_REMOVE      1
@@ -53,6 +49,11 @@ tested floats exemple :
 #define SHADOW_TOP      128
 #define SHADOW_LEFT      64
 #define SHADOW_RIGHT     32
+#define test 0b00011111
+
+#define HIDE_PART_LEFT    4 // old
+#define HIDE_PART_RIGHT   2 // old
+#define HIDE_PART_BOTTOM  1 // old
 
 //////// TEXTURES ////////
 #define BLOCK_TEXTURE_SIZE    256
@@ -76,6 +77,10 @@ tested floats exemple :
 #define CHUNK_EMPTY       0b000000000
 #define CHUNK_NON_UNIFORM 0b100000000
 
+//////// SAVE/LOAD ERROR CODES ////////
+#define SAVE_ERROR_NONE 0
+#define SAVE_ERROR_FILE_NOT_OPEN 1
+
 //////// BLOCK ID ////////
 #define BLOCK_TRANSPARENT_LIMIT 241
 #define BLOCK_EMPTY     0
@@ -86,4 +91,8 @@ tested floats exemple :
 #define BLOCK_LIGHT     5
 #define BLOCK_SAND      17
 #define BLOCK_WATER     241
+
+
+
+
 #endif

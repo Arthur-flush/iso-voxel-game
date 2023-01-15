@@ -6,7 +6,12 @@
 
 #include <game.hpp>
 #include <constants.hpp>
-#include <coords.hpp>
+
+typedef struct pixel_coord
+{
+    int x;
+    int y;
+} pixel_coord;
 
 struct Texture
 {

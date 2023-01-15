@@ -3,7 +3,6 @@
 
 #include <blocks.hpp>
 #include <vector>
-#include <coords.hpp>
 
 struct line_presence
 {
@@ -39,10 +38,17 @@ struct World
     block_coordonate convert_wcoord(int, int, int);
     world_coordonate convert_coord(block_coordonate);
 
+    /* load and save functions
+     * returns an int that encode an error code
+     * 0 being no errors
+     * 
+     */
+    int save_to_file(std::string filename);
+    int load_from_file(std::string filename);
 
     void translate_world_view_position(chunk_coordonate&, int&, int&, int&);
     void translate_world_view_wposition(int&, int&, int&);
-    void translate_world_view_wpositionf(float&, float&);
+    // void translate_world_view_jposition(int&, int&, int&);
     int world_view_position;
 
     void compress_chunk(int, int, int);
@@ -57,18 +63,10 @@ struct World
     // R := reverse, if the jumps are negative
     // nox/y/z := don't check x/y/z
 
-    Uint32 shadow_caster_presence(world_coordonate);
+    Uint32 line_presenceF(world_coordonate, world_coordonate);
+
+    line_presence line_visiblePR(world_coordonate, world_coordonate);
     /********************************************************/
-
-    bool modify_block(world_coordonate, int);
-
-    /* load and save functions
-     * returns an int that encode an error code
-     * 0 being no errors
-     * 
-     */
-    int save_to_file(std::string filename);
-    int load_from_file(std::string filename);
 };
 
 #endif

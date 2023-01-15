@@ -13,7 +13,8 @@ layout (location = 5) uniform ivec4 win_const;
 layout (location = 6) uniform float sprite_size;
 layout (location = 7) uniform int block_size;
 layout (location = 8) uniform int atlas_size;
-layout (location = 9) uniform int max_height_render;
+
+// layout (location = 9) in int block_Vline_size;
 
 uniform sampler2D ao;
 

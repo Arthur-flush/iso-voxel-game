@@ -58,7 +58,7 @@ void Multithreaded_Event_Handler::add_event(const int _id, const pixel_coord _ta
     add_event(new_event);
 }
 
-void Multithreaded_Event_Handler::add_event(const int _id, const coord3D coord)
+void Multithreaded_Event_Handler::add_event(const int _id, const chunk_coordonate coord)
 {
     game_event new_event;
 
@@ -78,12 +78,12 @@ void Multithreaded_Event_Handler::add_event(const int _id, const block_coordonat
     add_event(new_event);
 }
 
-void Multithreaded_Event_Handler::add_event(const int _id, const world_coordonate coord, Uint16 _blockid)
+void Multithreaded_Event_Handler::add_event(const int _id, const block_coordonate coord, Uint16 _blockid)
 {
     game_event new_event;
 
     new_event.id = _id;
-    new_event.data.wcoord1 = coord;
+    new_event.data.coord1 = coord;
     new_event.data.blockid = _blockid;
 
     add_event(new_event);
@@ -119,7 +119,7 @@ void Multithreaded_Event_Handler::handle()
             SecondaryThread_opcode |= STHREAD_OP_BLOCK_ONSCREEN;
             SecondaryThread_opcode |= STHREAD_OP_ALL_CHUNK_POS;
 
-            RE.refresh_sprite_size();
+            RE.refresh_block_onscreen();
             RE.projection_grid.refresh_visible_frags(RE.target, RE.screen->w, RE.screen->h, RE.block_onscreen_size);
 
             break;
@@ -146,7 +146,7 @@ void Multithreaded_Event_Handler::handle()
             SecondaryThread_opcode |= STHREAD_OP_ALL_CHUNK_POS;
 
             // std::cout << "Scale : " << 1.0/RE.window.scale << '\n'; 
-            RE.refresh_sprite_size();
+            RE.refresh_block_onscreen();
             RE.projection_grid.refresh_visible_frags(RE.target, RE.screen->w, RE.screen->h, RE.block_onscreen_size);
             break;
         
@@ -156,7 +156,7 @@ void Multithreaded_Event_Handler::handle()
             RE.target.y += event.data.target.y;
             SecondaryThread_opcode |= STHREAD_OP_ALL_CHUNK_POS;
 
-            RE.refresh_sprite_size();
+            RE.refresh_block_onscreen();
             RE.projection_grid.refresh_visible_frags(RE.target, RE.screen->w, RE.screen->h, RE.block_onscreen_size);
 
             // system("cls");
@@ -182,30 +182,50 @@ void Multithreaded_Event_Handler::handle()
 
             break;
         
-        case GAME_EVENT_HIGHLIGHT_CHANGE : // old
+        case GAME_EVENT_HIGHLIGHT_CHANGE :
             {
                 RE.highlight_coord  = event.data.coord1;
                 RE.highlight_wcoord = {event.data.coord1.x+event.data.coord1.chunk.x*CHUNK_SIZE,
                                        event.data.coord1.y+event.data.coord1.chunk.y*CHUNK_SIZE,
                                        event.data.coord1.z+event.data.coord1.chunk.z*CHUNK_SIZE
                                       };
+                
+                // chunk_coordonate
+                // c = RE.projection_grid.convert_wcoord
+                // (RE.highlight_coord.x*CHUNK_SIZE+RE.highlight_coord.x,
+                //  RE.highlight_coord.y*CHUNK_SIZE+RE.highlight_coord.y,
+                //  RE.highlight_coord.z*CHUNK_SIZE+RE.highlight_coord.z);
+
+                // RE.set_block_renderflags(c.x, c.y, c.z);
             }
             break;
 
         case GAME_EVENT_SINGLE_CHUNK_MOD :
-            
-            if(RE.world.modify_block(event.data.wcoord1, event.data.blockid))
             {
-                block_coordonate bc = RE.world.convert_wcoord(event.data.wcoord1.x, event.data.wcoord1.y, event.data.wcoord1.z);
+                block* b = RE.world.get_block(event.data.coord1.chunk, event.data.coord1.x,
+                                                                    event.data.coord1.y,
+                                                                    event.data.coord1.z);
+                if(b)
+                {
+                    b->id = event.data.blockid;
 
-                RE.refresh_block_visible(bc.chunk, bc.x, bc.y, bc.z);
-                RE.refresh_block_render_flags(bc.chunk, bc.x, bc.y, bc.z);
+                    // block* b2 = RE.world.get_block(event.data.coord1.chunk, event.data.coord1.x,
+                    //                                         event.data.coord1.y,
+                    //                                         event.data.coord1.z);
 
-                RE.projection_grid.refresh_all_identical_line();  
+                    STO_data.coord1 = event.data.coord1;
 
-                SecondaryThread_opcode |= STHREAD_OP_ALL_CHUNK_POS;
+                    // SecondaryThread_opcode |= STHREAD_OP_SINGLE_RENDER_FLAGS;
+                    // SecondaryThread_opcode |= STHREAD_OP_SINGLE_BLOCK_VISBLE;
+                    SecondaryThread_opcode |= STHREAD_OP_ALL_CHUNK_POS;
+
+                    RE.refresh_block_visible(STO_data.coord1.chunk, STO_data.coord1.x, STO_data.coord1.y, STO_data.coord1.z);
+                    RE.refresh_block_render_flags(STO_data.coord1.chunk, STO_data.coord1.x, STO_data.coord1.y, STO_data.coord1.z);
+                    RE.projection_grid.refresh_all_identical_line();
+                    RE.world.compress_all_chunks(); 
+                    // RE.refresh_block_render_flags(event.data.coord1.chunk);
+                }
             }
-            
             break;
 
         case GAME_EVENT_INIT_WORLD_RENDER_FLAGS :
@@ -242,11 +262,11 @@ int SecondaryThread_operations(void *data)
             // std::cout << "STO fnct : Receiving signal new_frame_to render\n";
 
             if(MEH->SecondaryThread_opcode & STHREAD_OP_BLOCK_ONSCREEN)
-                MEH->RE.refresh_sprite_size();
+                MEH->RE.refresh_block_onscreen();
 
             ///////////////////// BLOCK VISIBLE  //////////////////////
             if(MEH->SecondaryThread_opcode & STHREAD_OP_ALL_BLOCK_VISBLE)
-                MEH->RE.refresh_all_block_visible2();
+                MEH->RE.refresh_all_block_visible();
 
             else if(MEH->SecondaryThread_opcode & STHREAD_OP_SINGLE_BLOCK_VISBLE)
             {
@@ -257,7 +277,7 @@ int SecondaryThread_operations(void *data)
             ////////////////////// RENDER FLAGS  ///////////////////////
             if(MEH->SecondaryThread_opcode & STHREAD_OP_ALL_RENDER_FLAG)
             {
-                MEH->RE.refresh_all_render_flags2();
+                MEH->RE.refresh_all_render_flags();
                 MEH->RE.projection_grid.refresh_all_identical_line();
             }
 
@@ -340,14 +360,6 @@ int NFS_operations(void *data)
                 case NFS_OP_ALL_RENDER_FLAG :
                     MEH->RE.refresh_all_render_flags2();
                     MEH->RE.projection_grid.refresh_all_identical_line();
-                    break;
-
-                case NFS_OP_PG_ONSCREEN  : 
-                    MEH->RE.refresh_pg_onscreen();
-                    break;
-
-                case NFS_OP_PG_MHR :
-                    MEH->RE.refresh_pg_MHR();
                     break;
 
                 default:

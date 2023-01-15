@@ -59,15 +59,7 @@ void bloom()
 
 void main (void)
 {
-    // vec2 pixel_size = vec2(1.0/1920, 1.0/1080);
-    // if((texCoord.x > 0.5-pixel_size.x && texCoord.x < 0.5+pixel_size.x) ||
-    //    (texCoord.y > 0.5-pixel_size.y && texCoord.y < 0.5+pixel_size.y))
-    // {
-    //     fragColor = vec4(1.0, 1.0, 1.0, 1.0);
-    //     return;
-    // }
-
-    vec4 pixel = texture(iChannel0, texCoord);
+    vec4 pixel = texture2D(iChannel0, texCoord);
     fragColor = pixel;
 
     if((features & SFEATURE_BLOOM) != 0)
