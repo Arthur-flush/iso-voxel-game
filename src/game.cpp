@@ -161,17 +161,11 @@ void Game::input()
                             RE.shader_features ^= SFEATURE_BLOOM;
                             break;
 
-                        case SDLK_0 : {
+                        case SDLK_0 :
                             RE.highlight_mode  = HIGHLIGHT_NONE;
-                            block_coordonate bc;
-                            bc.x = -1;
-                            bc.y = -1;
-                            bc.z = -1;
-                            bc.chunk = {-1, -1, -1};
-                            GameEvent.add_event(GAME_EVENT_HIGHLIGHT_CHANGE, bc);
+                            GameEvent.add_event(GAME_EVENT_HIGHLIGHT_CHANGE, {{-1, -1, -1}, -1, -1, -1});
                             // RE.highlight_coord = {-1, -1, -1};
                             break;
-                        }
 
                         case SDLK_1 :
                             RE.highlight_mode = HIGHLIGHT_REMOVE;
@@ -259,16 +253,14 @@ void Game::input()
 
                         case SDLK_F6:
                         {
-                            Uint64 start = Get_time_ms();
+                            // time the save using chrono
+                            // Uint64 start = Get_time_ms();
 
                             status = world.save_to_file("test.worldsave");
-
-                            Uint64 end = Get_time_ms();
 
                             if(status == 0)
                             {
                                 std::cout << "world saved !\n";
-                                std::cout << "time taken : " << end - start << " ms\n";
                             }
                             else
                             {
@@ -282,12 +274,9 @@ void Game::input()
 
                             status = world.load_from_file("test.worldsave");
 
-                            Uint64 end = Get_time_ms();
-
                             if(status == 0) 
                             {
                                 std::cout << "world load successfully :)\n";
-                                std::cout << "time taken : " << end - start << " ms\n";
 
                                 RE.world = world;
                                 world.compress_all_chunks();
