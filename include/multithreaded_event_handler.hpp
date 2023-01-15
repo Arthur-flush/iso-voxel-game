@@ -4,7 +4,7 @@
 #include <queue>
 
 #include <SDL2/SDL.h>
-#include <SDL_gpu.h>
+#include <SDL2/SDL_gpu.h>
 #include <blocks.hpp>
 #include <texture.hpp>
 #include <render_engine.hpp>
@@ -29,12 +29,17 @@
 #define NFS_OP_NONE                     0
 #define NFS_OP_ALL_BLOCK_VISIBLE        1
 #define NFS_OP_ALL_RENDER_FLAG          2
-
+#define NFS_OP_PG_ONSCREEN              3
+#define NFS_OP_PG_MHR                   4
 
 struct game_event_aditional_data
 {
     float scale;
     pixel_coord target;
+
+    world_coordonate wcoord1;
+    world_coordonate wcoord2;
+
     block_coordonate coord1;
     block_coordonate coord2;
     Uint16 blockid;
@@ -76,9 +81,9 @@ class Multithreaded_Event_Handler
         void add_event(const int);
         void add_event(const int, const float);
         void add_event(const int, const pixel_coord);
-        void add_event(const int, const chunk_coordonate);
+        void add_event(const int, const coord3D);
         void add_event(const int, const block_coordonate);
-        void add_event(const int, const block_coordonate, Uint16);
+        void add_event(const int, const world_coordonate, Uint16);
         void add_event(const int, const block_coordonate, const block_coordonate);
         void handle();
 

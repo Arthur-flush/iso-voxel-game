@@ -2,16 +2,11 @@
 #define TEXTURE_HPP
 
 #include <SDL2/SDL.h>
-#include <SDL_gpu.h>
+#include <SDL2/SDL_gpu.h>
 
 #include <game.hpp>
 #include <constants.hpp>
-
-typedef struct pixel_coord
-{
-    int x;
-    int y;
-} pixel_coord;
+#include <coords.hpp>
 
 struct Texture
 {
