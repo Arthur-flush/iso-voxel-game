@@ -14,7 +14,7 @@ void Render_Engine::highlight_block2()
     guess.x = round(mouse2.y+mouse2.x)/block_onscreen_size;
     guess.y = round(mouse2.y-mouse2.x)/block_onscreen_size;
 
-    coord2D iguess = {(int)ceil(guess.x), (int)ceil(guess.y)};
+    coord2D iguess = {ceil(guess.x), ceil(guess.y)};
 
     // determine on wich vertical half of the case the cursor is
     long double half_value = (mouse2.x/block_onscreen_size)+(iguess.x+iguess.y)/2.0;
