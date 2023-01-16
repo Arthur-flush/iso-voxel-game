@@ -1,6 +1,6 @@
 #include <game.hpp>
 
-Texture::Texture(uint32_t id, GPU_Renderer* renderer)
+Texture::Texture(uint32_t id)
 {
     bool id_verif = true;
     ptr = NULL;
@@ -14,6 +14,8 @@ Texture::Texture(uint32_t id, GPU_Renderer* renderer)
     case BLOCK_AO               : filename.append("block/ao.png"); break;
 
     case BLOCK_HIGHLIGHT        : filename.append("block/highlight.png"); break;
+
+    case BLOCK_BORDER           : filename.append("block/border.png"); break;
 
     case MOSAIC                 : filename.append("block/mosaic.png"); break;
 

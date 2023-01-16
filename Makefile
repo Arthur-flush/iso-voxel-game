@@ -1,5 +1,5 @@
 CC = g++
-CPPFLAGS = -Wall -Ofast
+CPPFLAGS = -Wall 
 SDLFLAGS = -lmingw32 -lSDL2main -lSDL2 -lSDL2_gpu -g
 OBJ = obj/main.o obj/game.o obj/texture.o obj/render_engine.o obj/render_engine_2.o obj/world.o obj/multithreaded_event_handler.o obj/Shader.o obj/projection_grid.o
 INCLUDE = -Iinclude 
@@ -11,7 +11,9 @@ default: $(EXEC)
 run :
 	$(EXEC)
 
-$(EXEC) : $(OBJ)
+install: $(EXEC)
+
+$(EXEC): $(OBJ)
 	$(CC) $(OBJ) -o $(EXEC) $(SDLFLAGS)
 
 obj/main.o : main.cpp
