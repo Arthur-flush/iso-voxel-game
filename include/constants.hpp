@@ -3,12 +3,11 @@
 
 #include <iostream>
 
-#define MAIN_GAME_VERSION "0.8.2"
+#define MAIN_GAME_VERSION "0.9.0"
 
 //////// WINDOW DEFAULT CONSTANTS ////////
 #define DEFAULT_WINDOWS_W 1920
 #define DEFAULT_WINDOWS_H 1080
-#define DEFAULT_RENDER_DISTANCE 1 // useless at this time
 
 //////// SCALE ////////
 /*
@@ -33,6 +32,10 @@ tested floats exemple :
 //////// CHUNKS ////////
 #define CHUNK_SIZE 8
 
+//////// SAVE/LOAD ERROR CODES ////////
+#define SAVE_ERROR_NONE 0
+#define SAVE_ERROR_FILE_NOT_OPEN 1
+
 //////// HIGHLIGHT ////////
 #define HIGHLIGHT_NONE        0
 #define HIGHLIGHT_REMOVE      1
@@ -46,14 +49,11 @@ tested floats exemple :
 #define SFEATURE_BLOCK_BORDERS       4
 #define SFEATURE_SHADOWS             8
 #define SFEATURE_BLOOM               16
+
+//////// RENDER FLAGS ////////
 #define SHADOW_TOP      128
 #define SHADOW_LEFT      64
 #define SHADOW_RIGHT     32
-#define test 0b00011111
-
-#define HIDE_PART_LEFT    4 // old
-#define HIDE_PART_RIGHT   2 // old
-#define HIDE_PART_BOTTOM  1 // old
 
 //////// TEXTURES ////////
 #define BLOCK_TEXTURE_SIZE    256
@@ -71,15 +71,12 @@ tested floats exemple :
 #define BLOCK_NORMAL      0b00000010
 #define BLOCK_AO          0b00000011
 #define BLOCK_HIGHLIGHT   0b00000100
-#define SHADERTEXT_WATER  0b00000101
+#define BLOCK_BORDER      0b00000101
+#define SHADERTEXT_WATER  0b00000110
 
 //////// CHUNK COMPRESSION ////////
 #define CHUNK_EMPTY       0b000000000
 #define CHUNK_NON_UNIFORM 0b100000000
-
-//////// SAVE/LOAD ERROR CODES ////////
-#define SAVE_ERROR_NONE 0
-#define SAVE_ERROR_FILE_NOT_OPEN 1
 
 //////// BLOCK ID ////////
 #define BLOCK_TRANSPARENT_LIMIT 241
@@ -91,19 +88,4 @@ tested floats exemple :
 #define BLOCK_LIGHT     5
 #define BLOCK_SAND      17
 #define BLOCK_WATER     241
-#define BLOCK_GLASS     242
-
-const Uint8 BLOCK_PALETTE[] = {
-    BLOCK_DEBUG,
-    BLOCK_BLUE,
-    BLOCK_RED,
-    BLOCK_GREEN,
-    BLOCK_SAND,
-    // BLOCK_WATER,  // transparency not working rn  
-    BLOCK_GLASS
-};
-
-
-
-
 #endif

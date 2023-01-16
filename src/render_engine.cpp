@@ -35,13 +35,10 @@ Render_Engine::Render_Engine(struct World& _world) : world{_world}
     GPU_SetUniformfv(3, 3, 1, light_direction);
     float global_illumination[4] = {1, 1, 1, 0.60};
     GPU_SetUniformfv(4, 4, 1, global_illumination);
-
-    debug = true;
-    current_block_tmp = BLOCK_SAND;
 }
 
 // à renommer
-void Render_Engine::refresh_block_onscreen()
+void Render_Engine::refresh_sprite_size()
 {
     // std::cout << Textures[BLOCK_BLUE]->src.w;
     block_onscreen_size    = BLOCK_TEXTURE_SIZE*window.scale;
@@ -122,144 +119,6 @@ void Render_Engine::render_grid()
     }
 }
 
-void Render_Engine::set_block_renderflags(const chunk_coordonate& coord,
-                                          int x, int y, int z, 
-                                          bool verif_world_correspondencee)
-{
-    /*
-    // r = render flag left
-    // g = render flag right
-    // b = render flag top
-    // a = part culling
-    screen_block *sb = projection_grid.get_pos(coord, x, y, z);
-
-    if(!sb || !sb->block)
-    {
-        std::cout
-        << "Can't find matched coord for set_block_renderflags at "
-        << coord.x << ' ' << coord.y << ' ' << coord.z << " ("
-        << x << ' ' << y << ' ' << z << ")\n";
-        return;
-    }
-
-    if(verif_world_correspondencee)
-    {
-        block *b = world.get_block(coord, x, y, z);
-        if(b != sb->block && b != sb->transparent_block)
-        {
-            std::cout
-            << "Wrong coord for set_block_renderflags at "
-            << coord.x << ' ' << coord.y << ' ' << coord.z << " ("
-            << x << ' ' << y << ' ' << z << ")\n";
-            return;
-        }
-
-        if(sb->transparent_block)
-        {
-            int dec = sb->height_transparent-z;
-            sb->render_flags_transparent.r = world.get_block_id(coord, x+dec, y+dec+1, z+dec) ? 0 : 128;
-            sb->render_flags_transparent.g = world.get_block_id(coord, x+dec+1, y+dec, z+dec) ? 0 : 128;
-            sb->render_flags_transparent.b = world.get_block_id(coord, x+dec, y+dec, z+dec+1) ? 0 : 128;
-        }
-    }
-    else
-    {
-        int dec = sb->height-z-coord.z*CHUNK_SIZE;
-        x += dec;
-        y += dec;
-        z += dec;
-    } 
-
-    SDL_Color &render_flag = sb->render_flags;
-    render_flag.r = 0;
-    render_flag.g = 0;
-    render_flag.b = 0;
-    // render_flag.a = 0; //might delete later
-
-    int left  = world.get_opaque_block_id(coord, x, y+1, z); 
-    int right = world.get_opaque_block_id(coord, x+1, y, z);
-    int top   = world.get_opaque_block_id(coord, x, y, z+1);
-
-    if(!left)
-    {
-        render_flag.r += 128;
-
-        // AO LEFT
-        render_flag.r += world.get_opaque_block_id(coord, x-1, y+1, z) ? 64 : 0;
-
-        //AO RIGHT
-        render_flag.r += world.get_opaque_block_id(coord, x+1, y+1, z) ? 32 : 0;
-
-        //AO TOP
-        render_flag.r += world.get_opaque_block_id(coord, x, y+1, z+1) ? 16 : 0;
-
-        //AO BOTTOM
-        render_flag.r += world.get_opaque_block_id(coord, x, y+1, z-1) ? 8 : 0;
-
-        //AO CORNER TOP LEFT
-        render_flag.r += !(render_flag.r & 80) && world.get_opaque_block_id(coord, x-1, y+1, z+1) ? 4 : 0;
-
-        //AO CORNER BOTTOM RIGHT
-        render_flag.r += !(render_flag.r & 40) && world.get_opaque_block_id(coord, x+1, y+1, z-1) ? 2 : 0;
-
-        //AO CORNER BOTTOM LEFT
-        render_flag.r += !(render_flag.r & 72) && world.get_opaque_block_id(coord, x-1, y+1, z-1) ? 1 : 0;
-    }
-
-    if(!right)
-    {
-        render_flag.g += 128;
-
-        // AO LEFT
-        render_flag.g += world.get_opaque_block_id(coord, x+1, y+1, z) ? 64 : 0;
-
-        //AO RIGHT
-        render_flag.g += world.get_opaque_block_id(coord, x+1, y-1, z) ? 32 : 0;
-
-        //AO TOP
-        render_flag.g += world.get_opaque_block_id(coord, x+1, y, z+1) ? 16 : 0;
-
-        //AO BOTTOM
-        render_flag.g += world.get_opaque_block_id(coord, x+1, y, z-1) ? 8 : 0;
-
-        //AO CORNER TOP RIGHT
-        render_flag.g += !(render_flag.g & 48) && world.get_opaque_block_id(coord, x+1, y-1, z+1) ? 4 : 0;
-
-        //AO CORNER BOTTOM RIGHT
-        render_flag.g += !(render_flag.g & 40) && world.get_opaque_block_id(coord, x+1, y-1, z-1) ? 2 : 0;
-
-        //AO CORNER BOTTOM LEFT
-        render_flag.g += !(render_flag.g & 72) && world.get_opaque_block_id(coord, x+1, y+1, z-1) ? 1 : 0;
-    }
-
-    if(!top)
-    {
-        render_flag.b += 128;
-
-        // AO TOP LEFT
-        render_flag.b += world.get_opaque_block_id(coord, x-1, y, z+1) ? 64 : 0;
-
-        // AO TOP RIGHT 
-        render_flag.b += world.get_opaque_block_id(coord, x, y-1, z+1) ? 32 : 0;
-
-        // AO BOTTOM LEFT 
-        render_flag.b += world.get_opaque_block_id(coord, x, y+1, z+1) ? 16 : 0;
-
-        // AO BOTTOM RIGHT
-        render_flag.b += world.get_opaque_block_id(coord, x+1, y, z+1) ? 8 : 0;
-
-        // AO CORNER TOP
-        render_flag.b += !(render_flag.b & 96) && world.get_opaque_block_id(coord, x-1, y-1, z+1) ? 4 : 0;
-
-        // AO CORNER LEFT 
-        render_flag.b += !(render_flag.b & 80) && world.get_opaque_block_id(coord, x-1, y+1, z+1) ? 2 : 0;
-
-        // AO CORNER RIGHT
-        render_flag.b += !(render_flag.b & 40) && world.get_opaque_block_id(coord, x+1, y-1, z+1) ? 1 : 0;
-    }
-    */
-}
-
 void Render_Engine::set_block_renderflags(char face, int i, int j)
 {
     // r = render flag left
@@ -304,7 +163,7 @@ void Render_Engine::set_block_renderflags(char face, int i, int j)
         sb->render_flags_transparent.r |= diff;
     }
 
-    if(!sb->block.id)
+    if(!sb->block_screen.id)
     {
         // std::cout
         // << "Can't find block for set_block_renderflags at "
@@ -400,185 +259,10 @@ void Render_Engine::set_block_renderflags(char face, int i, int j)
     }
 }
 
-void Render_Engine::set_block_shadow(const chunk_coordonate& coord, const int x, const int y, const int z)
-{   
-    // block *b = world.get_block(coord, x, y , z);
-    // if(!b) return;
-
-    // // screen_block *sb = projection_grid.get_pos(coord, x, y, z);
-    // int z2 = z + coord.z*CHUNK_SIZE;
-
-    // bool is_casting_shadow = true;
-
-    // if(!b->id || b->id >= BLOCK_TEXTURE_SIZE)
-    // {
-    //     unsigned char shadow_context;
-        
-    //     set_block_shadow_context(shadow_context, coord, x, y, z);
-
-    //     if(!shadow_context)
-    //         is_casting_shadow = false;
-    //     else
-    //         return;
-    // }
-    
-    // if(1)
-    // {
-    // int x2 = x + coord.x*CHUNK_SIZE;
-    // int y2 = y + coord.y*CHUNK_SIZE;
-    // block *b2;
-    // screen_block *sb2;
-    // bool top_shadow_caster_found = false;
-    // bool transparent_tscf = false;
-
-    // int x3 = x2-1;
-    // int z3 = z2-1;
-
-    // while(!top_shadow_caster_found &&
-    //         x3 > 0 && 
-    //         z3 > 0)
-    // {
-    //     b2 = world.get_block_wcoord(x3, y2, z3);
-    //     top_shadow_caster_found = b2 && b2->id > 0 && b2->id < BLOCK_WATER;
-
-    //     /***** HANDLING TRANSPARENT BLOCK SHADOWS ***********/
-    //     if(!transparent_tscf)
-    //     {
-    //         transparent_tscf = b2 && b2->id >= BLOCK_WATER;
-    //         if(transparent_tscf)
-    //         {
-    //             sb2 = projection_grid.get_pos_world(x3, y2, z3);
-    //             if(sb2 && sb2->transparent_block && sb2->height_transparent == z3)
-    //             {
-    //                 if(is_casting_shadow)
-    //                     sb2->render_flags_transparent.a |= SHADOW_TOP;
-    //                 else
-    //                     sb2->render_flags_transparent.a &= ~SHADOW_TOP;
-    //             }
-    //         }
-    //     }
-    //     /****************************************************/
-
-    //     x3--;
-    //     z3--;
-    // }
-
-    // sb2 = projection_grid.get_pos_world(x3+1, y2, z3+1);
-
-    // if(top_shadow_caster_found && sb2 && sb2->block == b2)
-    // {
-    //     SDL_Color &render_flag2 = sb2->render_flags;
-
-    //     if(is_casting_shadow)
-    //         render_flag2.a |= SHADOW_TOP;
-    //     else
-    //         render_flag2.a &= ~SHADOW_TOP;
-    // }
-
-    // top_shadow_caster_found = false;
-
-    // x3 = x2-2;
-    // z3 = z2-1;
-
-    // while(!top_shadow_caster_found &&
-    //         x3 > 0 && 
-    //         z3 > 0)
-    // {
-    //     b2 = world.get_block_wcoord(x3, y2, z3);
-    //     top_shadow_caster_found = b2 && b2->id > 0 && b2->id < BLOCK_WATER;
-
-    //     /***** HANDLING TRANSPARENT BLOCK SHADOWS ***********/
-    //     if(!transparent_tscf)
-    //     {
-    //         transparent_tscf = b2 && b2->id >= BLOCK_WATER;
-    //         if(transparent_tscf)
-    //         {
-    //             sb2 = projection_grid.get_pos_world(x3, y2, z3);
-    //             if(sb2 && sb2->transparent_block && sb2->height_transparent == z3)
-    //             {
-    //                 if(is_casting_shadow)
-    //                     sb2->render_flags_transparent.a |= SHADOW_RIGHT;
-    //                 else
-    //                     sb2->render_flags_transparent.a &= ~SHADOW_RIGHT;
-    //             }
-    //         }
-    //     }
-    //     /****************************************************/
-
-    //     x3--;
-    //     z3--;
-    // }
-
-    // sb2 = projection_grid.get_pos_world(x3+1, y2, z3+1);
-
-    // if(top_shadow_caster_found && sb2 && sb2->block == b2)
-    // {
-    //     SDL_Color &render_flag2 = sb2->render_flags;
-
-    //     if(is_casting_shadow)
-    //         render_flag2.a |= SHADOW_RIGHT;
-    //     else
-    //         render_flag2.a &= ~SHADOW_RIGHT;
-    // }
-    // }
-    
-}
-
-void Render_Engine::set_block_shadow_context(unsigned char &shadow_context, const chunk_coordonate& coord, const int x, const int y, const int z)
-{
-    shadow_context = 0;
-
-    int x2 = x;
-    // int y2 = y;
-    int z2 = z;
-
-    bool top_shadow_caster_found = false;
-
-    /// SHADOW TOP ///
-    top_shadow_caster_found = false;
-    x2 = x+1;
-    z2 = z+1;
-
-    while(!top_shadow_caster_found &&
-            x2 <= world.max_chunk_coord.x*CHUNK_SIZE && 
-            z2 <= world.max_chunk_coord.z*CHUNK_SIZE)
-    {
-        top_shadow_caster_found = world.get_opaque_block_id(coord, x2, y, z2);
-
-        x2++;
-        z2++;
-    }
-
-    if(top_shadow_caster_found)
-        shadow_context |= SHADOW_TOP;
-
-    /// SHADOW RIGHT ///
-    top_shadow_caster_found = false;
-
-    x2 = x+2;
-    z2 = z+1;
-
-    while(!top_shadow_caster_found &&
-            x2 <= world.max_chunk_coord.x*CHUNK_SIZE && 
-            z2 <= world.max_chunk_coord.z*CHUNK_SIZE)
-    {
-        top_shadow_caster_found = world.get_opaque_block_id(coord, x2, y, z2);
-
-        x2++;
-        z2++;
-    }
-
-    if(top_shadow_caster_found)
-        shadow_context |= SHADOW_RIGHT;
-
-    // if(shadow_context & SHADOW_RIGHT || shadow_context & SHADOW_TOP)
-    //     shadow_context |= SHADOW_LEFT;
-}
-
 bool Render_Engine::render_block(const chunk_coordonate &wcoord, const chunk_coordonate &pgcoord, GPU_Rect& src_rect, GPU_Rect& dst_rect)
 {
     screen_block *sb = &projection_grid.pos[pgcoord.x][pgcoord.y][pgcoord.z];
-    block b = sb->block;
+    block b = sb->block_screen;
 
     if(sb && sb->is_on_screen && b.id)
     {
@@ -735,17 +419,13 @@ void Render_Engine::render_highlighted_blocks()
                          0, 0};
 
     screen_block *sb = projection_grid.get_pos_world(highlight_wcoord.x, highlight_wcoord.y, highlight_wcoord.z);
-    block b;
-    b.id = world.get_block_id(highlight_coord.chunk, highlight_coord.x, highlight_coord.y, highlight_coord.z);
 
-    if(b.id && sb && sb->block.id)
+    if(sb)
     {
-        // int shdr_atlas_const[2] = {BLOCK_TEXTURE_SIZE, BLOCK_TEXTURE_SIZE};
-        // GPU_SetAttributeiv(5, 2, shdr_atlas_const);
         GPU_SetUniformi(8, BLOCK_TEXTURE_SIZE);
 
-        if(b.id == sb->block.id)
-            GPU_SetColor(Textures[BLOCK_HIGHLIGHT]->ptr, sb->render_flags);
+        if(sb->height == highlight_wcoord.z)
+             GPU_SetColor(Textures[BLOCK_HIGHLIGHT]->ptr, sb->render_flags);
         else
             GPU_SetColor(Textures[BLOCK_HIGHLIGHT]->ptr, {128, 128, 128, 0});
 
@@ -755,248 +435,24 @@ void Render_Engine::render_highlighted_blocks()
     GPU_SetUniformi(8, MOSAIC_TEXTURE_SIZE);
 }
 
-void Render_Engine::highlight_block()
-{
-    mouse.x -= target.x;
-    mouse.y -= target.y;
-
-    mouse.y = mouse.y*2.0;
-
-    chunk_coordonate guess = {i32round(mouse.y + mouse.x), i32round(mouse.y - mouse.x), 0};
-
-    guess.x = i32round(ceil(guess.x/block_onscreen_size));
-    guess.y = i32round(ceil(guess.y/block_onscreen_size));
-
-    // determine on wich vertical half of the case the cursor is
-    long double half_value = (mouse.x/block_onscreen_size)+(guess.x+guess.y)/2.0;
-    bool half = round(half_value) != ceil(half_value) ? true : false;
-
-
-    //////// determine the precise block pointed by the cursor at the isometric 2d coord
-
-    if(highlight_mode == HIGHLIGHT_DEBUG)
-    {
-        screen_block *sb = projection_grid.get_pos_world(guess.x, guess.y, guess.z);
-
-        // block_coordonate bc = world.convert_wcoord(guess.x, guess.y, guess.z);
-        // screen_block *sb = projection_grid.get_pos(bc.x, bc.y, bc.z);
-
-        if(sb)
-        {
-            int diff = sb->height_transparent-sb->height;
-            guess.x = sb->x+diff;
-            guess.y = sb->y+diff;
-            guess.z = sb->height_transparent;
-
-            // std::cout << sb->x << ' ' << sb->y << ' ' << sb->height << '\n';
-            std::cout << (int)sb->render_flags_transparent.r << ' ' 
-                      << (int)sb->render_flags_transparent.g << ' ' 
-                      << (int)sb->render_flags_transparent.b << '\n';
-        }
-    }
-    else
-    {
-
-    guess.x += max_render_coord.z;
-    guess.y += max_render_coord.z;
-    guess.z += max_render_coord.z;
-
-    block *b = NULL, *blr = NULL, *bdiag = NULL;
-    
-    bool block_found = false;
-
-    for(int i = 0; !block_found && i < max_render_coord.z; i++)
-    {
-        guess.x -= 1;
-        guess.y -= 1;
-        guess.z -= 1;
-
-        b = world.get_block_wcoord(guess.x, guess.y, guess.z);
-
-        blr = NULL;
-        bdiag = NULL;
-        
-        // if(highlight_mode == HIGHLIGHT_REMOVE)
-        if(!b || !b->id || b->id == BLOCK_WATER)
-        {
-            if(half)
-                blr = world.get_block_wcoord(guess.x, guess.y-1, guess.z);
-            else
-                blr = world.get_block_wcoord(guess.x-1, guess.y, guess.z);
-            
-            if(!blr || !blr->id || blr->id == BLOCK_WATER)
-                bdiag = world.get_block_wcoord(guess.x-1, guess.y-1, guess.z);
-
-            if(bdiag && bdiag->id && bdiag->id != BLOCK_WATER)
-            {
-                guess.x--;
-                guess.y--;
-
-                block_found = true;
-            }
-            else if(half && blr && blr->id && blr->id != BLOCK_WATER)
-            {
-                guess.y--;
-                block_found = true;
-            }
-            else if(blr && blr->id && blr->id != BLOCK_WATER)
-            {
-                guess.x--;
-                block_found = true;
-            }
-
-            // else if (highlight_mode == HIGHLIGHT_PLACE)
-            // {
-            //     if(half)
-            //         blr = world.get_block_wcoord(guess.x, guess.y+1, guess.z);
-            //     else
-            //         blr = world.get_block_wcoord(guess.x+1, guess.y, guess.z);
-            // }
-        }
-        else
-        {
-            if(highlight_mode == HIGHLIGHT_PLACE)
-            {
-                guess.z ++;
-            }
-
-            block_found = true;
-        }
-    }
-
-    if(highlight_mode == HIGHLIGHT_PLACE)
-    {
-        b = world.get_block_wcoord(guess.x, guess.y, guess.z);
-
-        if(b && b->id && b->id != BLOCK_WATER)
-        {
-            // std::cout << "yo\n";
-            if(blr && blr->id && blr->id != BLOCK_WATER)
-            {
-                if(half)
-                    guess.y ++;
-                else
-                    guess.x ++;
-            }
-            else
-            {
-                if(half)
-                    guess.x ++;
-                else
-                    guess.y ++;
-            }
-        }
-    }
-    if(highlight_mode == HIGHLIGHT_PLACE_ALT)
-    {
-        blr = world.get_block_wcoord(guess.x, guess.y-1, guess.z);
-        bdiag = world.get_block_wcoord(guess.x-1, guess.y, guess.z);
-        
-        if(half)
-        {
-            if(!blr || !blr->id || blr->id == BLOCK_WATER)
-                guess.y --;
-            else
-                guess = {-1, -1, -1};
-        }
-        else
-        {
-            if(!bdiag || !bdiag->id || bdiag->id == BLOCK_WATER)
-                guess.x --;
-            else
-                guess = {-1, -1, -1};
-        }
-    }
-    }
-
-    block_coordonate new_highlight_coord;
-    new_highlight_coord.chunk.x = guess.x/CHUNK_SIZE;
-    new_highlight_coord.chunk.y = guess.y/CHUNK_SIZE;
-    new_highlight_coord.chunk.z = guess.z/CHUNK_SIZE;
-
-    new_highlight_coord.x = guess.x%CHUNK_SIZE;
-    new_highlight_coord.y = guess.y%CHUNK_SIZE;
-    new_highlight_coord.z = guess.z%CHUNK_SIZE;
-
-    GameEvent->add_event(GAME_EVENT_HIGHLIGHT_CHANGE, new_highlight_coord);
-
-    if(highlight_mode != HIGHLIGHT_REMOVE)
-        GameEvent->add_event(GAME_EVENT_SINGLE_CHUNK_POS_REFRESH, new_highlight_coord.chunk);
-}
-
 void Render_Engine::refresh_block_visible(const chunk_coordonate& coord, const int x, const int y, const int z)
 {
     int wx = x + coord.x*CHUNK_SIZE;
     int wy = y + coord.y*CHUNK_SIZE;
     int wz = z + coord.z*CHUNK_SIZE;
 
-    int shiftx = world.max_block_coord.x-wx;
-    int shifty = world.max_block_coord.y-wy;
-    int shiftz = world.max_block_coord.z-wz;
+    // int shiftx = world.max_block_coord.x-wx;
+    // int shifty = world.max_block_coord.y-wy;
+    // int shiftz = world.max_block_coord.z-wz;
 
-    int shiftmax = shiftx > shifty ? shiftx : shifty;
-    shiftmax = shiftmax > shiftz ? shiftmax : shiftz;
+    // int shiftmax = shiftx > shifty ? shiftx : shifty;
+    // shiftmax = shiftmax > shiftz ? shiftmax : shiftz;
 
-    wx += shiftmax;
-    wy += shiftmax;
-    wz += shiftmax;
+    // wx += shiftmax;
+    // wy += shiftmax;
+    // wz += shiftmax;
 
-    refresh_line_visible(wx, wy, wz);
-}
-
-void Render_Engine::refresh_line_visible(int x, int y, int z)
-{
-    // if(x < 0 || y < 0 || z < 0 ||
-    //    x > world.max_block_coord.x || y > world.max_block_coord.y || z > world.max_block_coord.z)
-    // {
-    //     std::cerr << "Error : bas request to refresh_line_visible with coordonates " << x << ' ' << y << ' ' << z << '\n';
-    //     return;
-    // }
-
-    bool first_block_found = false;
-    bool first_transparent_block_found = false;
-    block b;
-    screen_block *sb = projection_grid.get_pos_world(x, y, z);
-
-    if(!sb)
-    {
-        std::cerr << "Error : can't find match screen block in refresh_line_visible function\n";
-        return;
-    }
-
-    sb->block.id = BLOCK_EMPTY;
-    sb->transparent_block.id = BLOCK_EMPTY;
-    sb->height = 0;
-    sb->height_transparent = 0;
-
-    while(!first_block_found && x >= 0 && y >= 0 && z >= 0)
-    {
-        b.id = world.get_block_id_wcoord(x, y, z);
-
-        if(b.id)
-        {
-            if(b.id < BLOCK_TRANSPARENT_LIMIT)
-            {
-                sb->block.id = b.id;
-
-                sb->height = z;
-                sb->x = x;
-                sb->y = y;
-                first_block_found = true;
-            }
-            else if(!first_transparent_block_found)
-            {
-                sb->transparent_block = b;
-
-                sb->height_transparent = z;
-                first_transparent_block_found = true;
-            }
-        }
-
-        x--;
-        y--;
-        z--;        
-    }
+    refresh_line_visible2(wx, wy, wz);
 }
 
 void Render_Engine::refresh_pg_block_visible()
@@ -1068,28 +524,6 @@ void Render_Engine::refresh_pg_block_visible()
         }
 }
 
-void Render_Engine::refresh_all_block_visible()
-{
-    std::cout << "game init : refreshing all block visible... ";
-    Uint64 start =  Get_time_ms();
-
-    for(int x = 0; x <= world.max_block_coord.x; x++)
-        for(int y = 0; y <= world.max_block_coord.y; y++)
-            refresh_line_visible(x, y, world.max_block_coord.z);
-
-    for(int x = 0; x <= world.max_block_coord.x; x++)
-        for(int z = 0; z <= world.max_block_coord.z; z++)
-            refresh_line_visible(x, world.max_block_coord.y, z);
-    
-    for(int y = 0; y <= world.max_block_coord.y; y++)
-        for(int z = 0; z <= world.max_block_coord.z; z++)
-            refresh_line_visible(world.max_block_coord.x, y, z);
-
-    Uint64 end = Get_time_ms();
-    std::cout << "finished !\n";
-    std::cout << "\t==> time elapsed : " << end-start << " ms\n";
-}
-
 void Render_Engine::refresh_block_render_flags(const chunk_coordonate& coord, const int x, const int y, const int z)
 {
     for(char _x = -1; _x <= 1; _x++)
@@ -1103,83 +537,7 @@ void Render_Engine::refresh_block_render_flags(const chunk_coordonate& coord, co
                 set_block_renderflags(c.x, c.y, c.z);
             }
 
-    set_block_shadow(coord, x, y, z);
-
-    screen_block *sb = projection_grid.get_pos(coord, x, y, z);
-
-    if(sb && sb->height == z+coord.z*CHUNK_SIZE)
-        set_block_shadow_context(sb->render_flags.a, coord, x, y, z);
-}
-
-void Render_Engine::refresh_all_render_flags()
-{
-    /*
-    std::cout << "render engine : refreshing all render flags... ";
-    Uint64 start =  Get_time_ms();
-
-    int face;
-    block_coordonate bc;
-    screen_block *sb;
-
-    face = 0;
-    for(int i = 0; i < projection_grid.size[face][0]; i++)
-        for(int j = 0; j < projection_grid.size[face][1]; j++)
-        {
-            sb = &projection_grid.pos[face][i][j];
-            bc = world.convert_wcoord(sb->x, sb->y, sb->height);
-
-            set_block_renderflags(face, i, j);
-            set_block_shadow_context(sb->render_flags.a, bc.chunk, bc.x, bc.y, bc.z);
-
-            if(sb->transparent_block)
-            {
-                int diff = sb->height_transparent-sb->height;
-                bc = world.convert_wcoord(sb->x+diff, sb->y+diff, sb->height_transparent);
-                set_block_shadow_context(sb->render_flags_transparent.a, bc.chunk, bc.x, bc.y, bc.z);
-            }
-        }
-
-    face = 1;
-    for(int i = 0; i < projection_grid.size[face][0]; i++)
-        for(int j = 0; j < projection_grid.size[face][1]; j++)
-        {
-            sb = &projection_grid.pos[face][i][j];
-            bc = world.convert_wcoord(sb->x, sb->y, sb->height);
-            
-            set_block_renderflags(face, i, j);
-            set_block_shadow_context(projection_grid.pos[face][i][j].render_flags.a, bc.chunk, bc.x, bc.y, bc.z);
-
-            if(sb->transparent_block)
-            {
-                int diff = sb->height_transparent-sb->height;
-                bc = world.convert_wcoord(sb->x+diff, sb->y+diff, sb->height_transparent);
-                set_block_shadow_context(sb->render_flags_transparent.a, bc.chunk, bc.x, bc.y, bc.z);
-            }
-        }
-            
-    face = 2;
-    for(int i = 0; i < projection_grid.size[face][0]; i++)
-        for(int j = 0; j < projection_grid.size[face][1]; j++)
-        {
-            sb = &projection_grid.pos[face][i][j];
-            bc = world.convert_wcoord(sb->x, sb->y, sb->height);
-            
-            set_block_renderflags(face, i, j);
-            set_block_shadow_context(projection_grid.pos[face][i][j].render_flags.a, bc.chunk, bc.x, bc.y, bc.z);
-
-            if(sb->transparent_block)
-            {
-                int diff = sb->height_transparent-sb->height;
-                bc = world.convert_wcoord(sb->x+diff, sb->y+diff, sb->height_transparent);
-                set_block_shadow_context(sb->render_flags_transparent.a, bc.chunk, bc.x, bc.y, bc.z);
-            }
-        }
-
-    Uint64 end = Get_time_ms();
-    std::cout << "finished !\n";
-
-    std::cout << "\t==> time elapsed : " << end-start << " ms\n";
-    */
+    refresh_line_shadows(x + coord.x*CHUNK_SIZE);
 }
 
 void Render_Engine::render_frame()
@@ -1223,6 +581,7 @@ void Render_Engine::render_frame()
     // std::cout << "block_onscreen_size: " << block_onscreen_size << std::endl;
     GPU_SetUniformi(7, BLOCK_TEXTURE_SIZE);
     GPU_SetUniformi(8, MOSAIC_TEXTURE_SIZE);
+    // GPU_SetUniformi(9, max_height_render);
 
     GPU_SetShaderImage(opaque_world_render, shader.get_location("world"), 3);
     /******************************************************************/
@@ -1234,12 +593,11 @@ void Render_Engine::render_frame()
     world_render_shader.activate();
     GPU_Blit(final_world_render, NULL, screen3, 0, 0);
     
-    
     shader.activate();
     if(window.scale > PANORAMA_SCALE_THRESHOLD)
     {
         if(highlight_mode)
-            highlight_block();
+            highlight_block2();
 
         render_highlighted_blocks();    
     }

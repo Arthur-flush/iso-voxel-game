@@ -5,13 +5,7 @@
 #include <SDL2/SDL_gpu.h>
 
 #include <game.hpp>
-#include <constants.hpp>
-
-typedef struct pixel_coord
-{
-    int x;
-    int y;
-} pixel_coord;
+#include <coords.hpp>
 
 struct Texture
 {
@@ -20,7 +14,7 @@ struct Texture
     
     uint32_t id;
 
-    Texture(uint32_t, GPU_Renderer*);
+    Texture(uint32_t);
     ~Texture();
 };
 
