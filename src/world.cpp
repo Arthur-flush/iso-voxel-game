@@ -546,8 +546,6 @@ int World::load_from_file(std::string filename) {
         init(tmp.x, tmp.y, tmp.z);
     }
 
-    init(tmp.x, tmp.y, tmp.z);
-
     for (int x = 0; x < tmp.x; x++) {
         for (int y = 0; y < tmp.y; y++) {
             for (int z = 0; z < tmp.z; z++) {

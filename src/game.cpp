@@ -115,7 +115,7 @@ void Game::init(GPU_Target* _screen)
 
 int Game::load_world(std::string filename, bool new_size)
 {
-    int status = world.load_from_file("test.worldsave");
+    int status = world.load_from_file(filename);
 
     if(status == 0) 
     {
@@ -130,6 +130,7 @@ int Game::load_world(std::string filename, bool new_size)
         // RE.world = world;
         // world.compress_all_chunks();
 
+        RE.max_height_render = world.max_block_coord.z;
         refresh_world_render();
     }
     else
@@ -320,7 +321,7 @@ void Game::input()
                             // }
                             // else
                             //     std::cout << "world load failed ._. !\n";
-                            // break;
+                            break;
                         }
 
                         case SDLK_r :
