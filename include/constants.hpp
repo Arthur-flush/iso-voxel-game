@@ -88,4 +88,19 @@ tested floats exemple :
 #define BLOCK_LIGHT     5
 #define BLOCK_SAND      17
 #define BLOCK_WATER     241
+#define BLOCK_GLASS     242
+
+const Uint8 BLOCK_PALETTE[] = {
+    BLOCK_RED,
+    BLOCK_DEBUG,
+    BLOCK_BLUE,
+    BLOCK_GREEN,
+    BLOCK_SAND,
+    // BLOCK_WATER,  // transparency not working rn  
+    BLOCK_GLASS
+};
+
+
+
+
 #endif

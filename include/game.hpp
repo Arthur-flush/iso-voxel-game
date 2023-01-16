@@ -18,6 +18,7 @@ class Game
         Uint16 state;
 
         Uint16 Current_block;
+        int Current_block_n;
 
         World world;
         Render_Engine RE;
