@@ -2,6 +2,7 @@
 #define BLOCKS_HPP
 
 #include <constants.hpp>
+#include <SDL2/SDL.h>
 
 struct block
 {
@@ -11,7 +12,7 @@ struct block
 struct chunk
 {
     int compress_value;
-    block block[CHUNK_SIZE][CHUNK_SIZE][CHUNK_SIZE];
+    block blocks[CHUNK_SIZE][CHUNK_SIZE][CHUNK_SIZE];
 };
 
 #endif

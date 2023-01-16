@@ -74,17 +74,17 @@ void Game::generate_debug_world()
             if(wz < world.max_chunk_coord.z*CHUNK_SIZE/2)
             {
                 if(wx < 4 || wy < 4 || z == 0 || wz2 > wx/5 || wz2 > wy/5)
-                    world.chunk[x][y][z].block[i][j][k].id = BLOCK_SAND;
+                    world.chunks[x][y][z].blocks[i][j][k].id = BLOCK_SAND;
             }
 
-            if(wz < 42 && !world.chunk[x][y][z].block[i][j][k].id)
-                world.chunk[x][y][z].block[i][j][k].id = BLOCK_WATER;
+            if(wz < 42 && !world.chunks[x][y][z].blocks[i][j][k].id)
+                world.chunks[x][y][z].blocks[i][j][k].id = BLOCK_WATER;
 
             if(wz < 42 && (wx == world.max_block_coord.x-1 || wy == world.max_block_coord.y-1))
-                world.chunk[x][y][z].block[i][j][k].id = BLOCK_DEBUG;
+                world.chunks[x][y][z].blocks[i][j][k].id = BLOCK_DEBUG;
             
             if(wx == 150)
-                world.chunk[x][y][z].block[i][j][k].id = BLOCK_DEBUG;
+                world.chunks[x][y][z].blocks[i][j][k].id = BLOCK_DEBUG;
         }
     }
     //////////////////////////////

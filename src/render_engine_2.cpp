@@ -342,7 +342,7 @@ void Render_Engine::refresh_line_visible2(int x, int y, int z)
     sb->transparent_block.id = BLOCK_EMPTY;
     sb->height_transparent = 0;
 
-    sb->block.id = BLOCK_EMPTY;
+    sb->block_screen.id = BLOCK_EMPTY;
     sb->height = 0;
     sb->x = 0;
     sb->y = 0;
@@ -393,7 +393,7 @@ void Render_Engine::refresh_line_visible2(int x, int y, int z)
 
         if(new_chunk)
         {
-            c = &world.chunk[bc2.chunk.x][bc2.chunk.y][bc2.chunk.z];
+            c = &world.chunks[bc2.chunk.x][bc2.chunk.y][bc2.chunk.z];
 
             new_chunk = false;
 
@@ -404,7 +404,7 @@ void Render_Engine::refresh_line_visible2(int x, int y, int z)
                 {
                     if(c->compress_value < BLOCK_TRANSPARENT_LIMIT)
                     {
-                        sb->block.id = c->compress_value;
+                        sb->block_screen.id = c->compress_value;
 
                         sb->height = bc.z+bc.chunk.z*CHUNK_SIZE;
                         sb->x = bc.x+bc.chunk.x*CHUNK_SIZE;
@@ -447,13 +447,13 @@ void Render_Engine::refresh_line_visible2(int x, int y, int z)
 
         else
         {
-            b.id = c->block[bc2.x][bc2.y][bc2.z].id;
+            b.id = c->blocks[bc2.x][bc2.y][bc2.z].id;
 
             if(b.id)
             {
                 if(b.id < BLOCK_TRANSPARENT_LIMIT)
                 {
-                    sb->block.id = b.id;
+                    sb->block_screen.id = b.id;
 
                     sb->height = bc.z+bc.chunk.z*CHUNK_SIZE;
                     sb->x = bc.x+bc.chunk.x*CHUNK_SIZE;
@@ -503,7 +503,7 @@ void Render_Engine::refresh_all_block_visible2()
         {
             screen_block * sb = projection_grid.get_pos_world(x, 0, z);
 
-            sb->block.id = 0;
+            sb->block_screen.id = 0;
             sb->transparent_block.id = 0;
         }
 
@@ -512,7 +512,7 @@ void Render_Engine::refresh_all_block_visible2()
         {
             screen_block * sb = projection_grid.get_pos_world(0, y, z);
 
-            sb->block.id = 0;
+            sb->block_screen.id = 0;
             sb->transparent_block.id = 0;
         }
 
@@ -599,7 +599,7 @@ void Render_Engine::set_block_shadow_context2(int face, int i, int j)
     sb->render_flags.a &= 0b00011111;
     sb->render_flags_transparent.a &= 0b00011111;
 
-    if(sb->block.id)
+    if(sb->block_screen.id)
     {
         int x = sb->x;
         int y = sb->y;

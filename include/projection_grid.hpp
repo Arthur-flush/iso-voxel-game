@@ -10,7 +10,7 @@
 struct screen_block
 {
     block transparent_block;
-    block block;
+    block block_screen;
 
     Uint16 height;
     Uint16 x;
@@ -32,7 +32,7 @@ struct interval
     int end;
 };
 
-struct projection_grid
+struct Projection_grid
 {
     public :
         int size[3][2];
@@ -40,8 +40,8 @@ struct projection_grid
         interval visible_frags_save[3][2];
         screen_block **pos[3];
 
-        projection_grid();
-        ~projection_grid();
+        Projection_grid();
+        ~Projection_grid();
 
         void init_pos(const int, const int, const int);
         void free_pos();

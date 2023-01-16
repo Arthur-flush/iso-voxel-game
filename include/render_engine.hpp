@@ -77,7 +77,7 @@ struct Render_Engine
 
     int max_height_render;
     
-    projection_grid projection_grid;
+    Projection_grid projection_grid;
 
     bool shader_enable;
     unsigned int shader_features;

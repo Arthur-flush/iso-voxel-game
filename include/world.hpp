@@ -17,7 +17,7 @@ struct World
 
     chunk_coordonate max_block_coord;
 
-    chunk ***chunk;
+    chunk ***chunks;
 
     block* get_block(chunk_coordonate, int, int, int);
     block* get_block_wcoord(int, int, int);

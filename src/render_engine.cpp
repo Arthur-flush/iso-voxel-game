@@ -163,7 +163,7 @@ void Render_Engine::set_block_renderflags(char face, int i, int j)
         sb->render_flags_transparent.r |= diff;
     }
 
-    if(!sb->block.id)
+    if(!sb->block_screen.id)
     {
         // std::cout
         // << "Can't find block for set_block_renderflags at "
@@ -262,7 +262,7 @@ void Render_Engine::set_block_renderflags(char face, int i, int j)
 bool Render_Engine::render_block(const chunk_coordonate &wcoord, const chunk_coordonate &pgcoord, GPU_Rect& src_rect, GPU_Rect& dst_rect)
 {
     screen_block *sb = &projection_grid.pos[pgcoord.x][pgcoord.y][pgcoord.z];
-    block b = sb->block;
+    block b = sb->block_screen;
 
     if(sb && sb->is_on_screen && b.id)
     {
