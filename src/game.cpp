@@ -141,6 +141,8 @@ int Game::load_world(std::string filename, bool new_size)
 
 void Game::refresh_world_render()
 {
+    RE.projection_grid.refresh_visible_frags(RE.target, RE.screen->w, RE.screen->h, RE.block_onscreen_size);
+
     GameEvent.drop_all_nfs_event();
     RE.projection_grid.clear();
     RE.projection_grid.save_curr_interval();
