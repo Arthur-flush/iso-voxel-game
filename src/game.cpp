@@ -344,18 +344,18 @@ void Game::input()
                             Current_block_n++;
                             if (Current_block_n % sizeof(BLOCK_PALETTE) == 0)
                                 Current_block_n = 0;
-                            Current_block = BLOCK_PALETTE[Current_block];
-                            std::cout << "Current block id: " << (int)BLOCK_PALETTE[Current_block] << '\n';
-                            std::cout << "Current block   : " << Current_block << '\n';
+                            Current_block = BLOCK_PALETTE[Current_block_n];
+                            std::cout << "Current block id: " << (int)BLOCK_PALETTE[Current_block_n] << '\n';
+                            std::cout << "Current block   : " << Current_block_n << '\n';
                             break;
                         
                         case SDLK_RIGHT :
                             Current_block_n--;
                             if (Current_block_n < 0)
                                 Current_block_n = sizeof(BLOCK_PALETTE) - 1;
-                            Current_block = BLOCK_PALETTE[Current_block];
-                            std::cout << "Current block id: " << (int)BLOCK_PALETTE[Current_block] << '\n';
-                            std::cout << "Current block   : " << Current_block << '\n';
+                            Current_block = BLOCK_PALETTE[Current_block_n];
+                            std::cout << "Current block id: " << (int)BLOCK_PALETTE[Current_block_n] << '\n';
+                            std::cout << "Current block   : " << Current_block_n << '\n';
                             break;
 
                         case SDLK_TAB :

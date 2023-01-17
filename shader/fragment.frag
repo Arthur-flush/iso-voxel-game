@@ -261,14 +261,16 @@ float noise (in vec2 st) {
             (d - b) * u.x * u.y;
 }
 
+
+
 const float Persistance = 1;
-const float Roughness = 0.2;
+const float Roughness = 1;
 
 float diffraction(vec2 world_pos) {
 
     float diffraction_index = 0;
-    float frequency = 1;
-    float factor = 1;
+    float frequency = 0.5;
+    float factor = 0.8;
 
     for (int i = 0; i < 4; i++) {
         diffraction_index += noise(world_pos * frequency / (sprite_size / 2048) * i * 0.72354) * factor;
@@ -277,12 +279,11 @@ float diffraction(vec2 world_pos) {
     }
 
     // diffraction_index = ((noise((world_pos * 0.1) / (sprite_size / 2048)) + noise((world_pos * 1) / (sprite_size / 2048)) *0.2 )) * 0.01; 
-    return diffraction_index;
+    return (1 - diffraction_index) / 20;
 }
 
-float test(vec2 v) {
-    return sqrt(v.x*v.x + v.y*v.y) / 2;
-}
+
+
 
 void handle_glass(vec4 pixel) {
     vec2 screen_pos = vec2(gl_FragCoord.x/1920, gl_FragCoord.y/1080);
@@ -290,17 +291,15 @@ void handle_glass(vec4 pixel) {
         screen_pos.x - (win_const.z/1920.0), 
         screen_pos.y - (win_const.w/1080.0)
         );
-    vec2 diffracted_pos = screen_pos + vec2(diffraction(world_pos)) * (sprite_size / 2048);
+    vec2 diffracted_pos = screen_pos + vec2(diffraction(world_pos)) * (sprite_size / 2048) ;
     vec4 pixel_world = texture(world, diffracted_pos);
 
 
-    // fragColor.rgb = vec3(diffraction(world_pos)) * 50;
+    // fragColor.rgb = vec3(diffraction(world_pos));
     
-    fragColor.rgb = pixel_world.rgb;
+    // fragColor.rgb = pixel_world.rgb;
 
-    // fragColor.rgb = pixel.rgb*pixel.a + (pixel_world.rgb * (1-pixel.a));
-
-    // fragColor.rgb = vec3(test(diffracted_pos));
+    fragColor.rgb = pixel.rgb*pixel.a + (pixel_world.rgb * (1-pixel.a));
 
     fragColor.a = 1;
 }
