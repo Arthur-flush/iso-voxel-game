@@ -83,8 +83,21 @@ void Game::generate_debug_world()
             if(wz < 42 && (wx == world.max_block_coord.x-1 || wy == world.max_block_coord.y-1))
                 world.chunks[x][y][z].blocks[i][j][k].id = BLOCK_DEBUG;
             
-            if(wx == 150 && wz > 43)
-                world.chunks[x][y][z].blocks[i][j][k].id = BLOCK_GLASS;
+            if(wx == 150 && wz > 43) {
+                const int glass_size = 8;
+                const int glass[] = {
+                    BLOCK_GLASS_RED,
+                    BLOCK_GLASS_BLUE,
+                    BLOCK_GLASS_GREEN,
+                    BLOCK_GLASS_YELLOW,
+                    BLOCK_GLASS_CYAN,
+                    BLOCK_GLASS_MAGENTA
+                };
+
+                int color = (wy / glass_size) % (sizeof(glass) / sizeof(glass[0])); 
+
+                world.chunks[x][y][z].blocks[i][j][k].id = glass[color];
+            }
 
             // if(wz == 0 && wx == 15)
             //     world.chunk[x][y][z].block[i][j][k].id = BLOCK_GREEN;

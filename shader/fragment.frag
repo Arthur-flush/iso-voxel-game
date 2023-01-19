@@ -361,7 +361,7 @@ void main (void)
         {
             handle_water(pixel);
         }
-        else if (id == 241) { // glass
+        else if (id > 240) { // glass
             handle_glass(pixel);
         }
 
