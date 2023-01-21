@@ -54,8 +54,8 @@ struct World
      * 0 being no errors
      * 
      */
-    int save_to_file(std::string filename);
-    int load_from_file(std::string filename);
+    int save_to_file(const std::string& filename);
+    int load_from_file(const char*& filename);
 };
 
 #endif
