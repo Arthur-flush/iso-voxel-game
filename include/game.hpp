@@ -9,6 +9,7 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_gpu.h>
 
+#include <physics.hpp>
 #include <render_engine.hpp>
 #include <multithreaded_event_handler.hpp>
 
@@ -23,6 +24,7 @@ class Game
         World world;
         Render_Engine RE;
         Multithreaded_Event_Handler GameEvent;
+        PhysicsEngine physics_engine;
 
         void init(GPU_Target*);
         void init_Render_Engine(GPU_Target*);
@@ -41,7 +43,7 @@ class Game
 
 
 
-    public :
+    public:
         Game(GPU_Target*);
         int mainloop();
 };

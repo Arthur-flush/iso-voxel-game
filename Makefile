@@ -1,7 +1,7 @@
 CC = g++
-CPPFLAGS = -Wall 
+CPPFLAGS = -Wall -std=c++17
 SDLFLAGS = -lmingw32 -lSDL2main -lSDL2 -lSDL2_gpu -g
-OBJ = obj/main.o obj/game.o obj/texture.o obj/render_engine.o obj/render_engine_2.o obj/world.o obj/multithreaded_event_handler.o obj/Shader.o obj/projection_grid.o
+OBJ = obj/main.o obj/game.o obj/texture.o obj/render_engine.o obj/render_engine_2.o obj/world.o obj/multithreaded_event_handler.o obj/Shader.o obj/projection_grid.o obj/physics.o obj/coords.o
 INCLUDE = -Iinclude 
 EXEC = iso.exe
 DEL = del /Q /F

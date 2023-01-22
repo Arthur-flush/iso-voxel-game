@@ -1,6 +1,6 @@
 #include <game.hpp>
 
-Game::Game(GPU_Target* _screen) : RE(world), GameEvent(RE)
+Game::Game(GPU_Target* _screen) : RE(world), GameEvent(RE), physics_engine()
 {
     state = STATE_QUIT;
     init(_screen);
@@ -51,8 +51,8 @@ void Game::init_Render_Engine(GPU_Target* _screen)
 void Game::generate_debug_world()
 {
     // chunk_coordonate world_size = {256, 256, 32};
-    // chunk_coordonate world_size = {32, 32, 12};
-    chunk_coordonate world_size = {128, 128, 16};
+    chunk_coordonate world_size = {32, 32, 12};
+    // chunk_coordonate world_size = {128, 128, 16};
     // chunk_coordonate world_size = {64, 64, 12};
     world.init(world_size.x, world_size.y, world_size.z);
 
@@ -83,21 +83,21 @@ void Game::generate_debug_world()
             if(wz < 42 && (wx == world.max_block_coord.x-1 || wy == world.max_block_coord.y-1))
                 world.chunks[x][y][z].blocks[i][j][k].id = BLOCK_DEBUG;
             
-            if(wx == 150 && wz > 43) {
-                const int glass_size = 8;
-                const int glass[] = {
-                    BLOCK_GLASS_RED,
-                    BLOCK_GLASS_BLUE,
-                    BLOCK_GLASS_GREEN,
-                    BLOCK_GLASS_YELLOW,
-                    BLOCK_GLASS_CYAN,
-                    BLOCK_GLASS_MAGENTA
-                };
+            // if(wx == 150 && wz > 43) {
+            //     const int glass_size = 8;
+            //     const int glass[] = {
+            //         BLOCK_GLASS_RED,
+            //         BLOCK_GLASS_BLUE,
+            //         BLOCK_GLASS_GREEN,
+            //         BLOCK_GLASS_YELLOW,
+            //         BLOCK_GLASS_CYAN,
+            //         BLOCK_GLASS_MAGENTA
+            //     };
 
-                int color = (wy / glass_size) % (sizeof(glass) / sizeof(glass[0])); 
+            //     int color = (wy / glass_size) % (sizeof(glass) / sizeof(glass[0])); 
 
-                world.chunks[x][y][z].blocks[i][j][k].id = glass[color];
-            }
+            //     world.chunks[x][y][z].blocks[i][j][k].id = glass[color];
+            // }
 
             // if(wz == 0 && wx == 15)
             //     world.chunk[x][y][z].block[i][j][k].id = BLOCK_GREEN;
@@ -407,8 +407,16 @@ void Game::input()
                     if(RE.highlight_mode == HIGHLIGHT_REMOVE)
                         GameEvent.add_event(GAME_EVENT_SINGLE_BLOCK_MOD, (coord3D)RE.highlight_wcoord, BLOCK_EMPTY);
                     
-                    else if(RE.highlight_mode == HIGHLIGHT_PLACE || RE.highlight_mode == HIGHLIGHT_PLACE_ALT)
+                    else if(RE.highlight_mode == HIGHLIGHT_PLACE || RE.highlight_mode == HIGHLIGHT_PLACE_ALT) {
                         GameEvent.add_event(GAME_EVENT_SINGLE_BLOCK_MOD, (coord3D)RE.highlight_wcoord, Current_block);
+
+                        if (Current_block == BLOCK_WATER) {
+                            block_coordonate bcoord = world.convert_wcoord(RE.highlight_wcoord.x, RE.highlight_wcoord.y, RE.highlight_wcoord.z);
+                            PhysicsEventWater *pe = new PhysicsEventWater(&world, &physics_engine, &GameEvent, bcoord);
+                            physics_engine.add_event(pe);
+                        }
+                            
+                    }
                 }
                 break;
 

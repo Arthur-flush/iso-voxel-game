@@ -2,6 +2,7 @@
 #define CONSTANTS_HPP
 
 #include <iostream>
+#include <SDL2/SDL.h>
 
 #define MAIN_GAME_VERSION "0.9.0"
 
@@ -108,10 +109,12 @@ const Uint8 BLOCK_PALETTE[] = {
     BLOCK_GLASS_GREEN,
     BLOCK_GLASS_YELLOW,
     BLOCK_GLASS_CYAN,
-    BLOCK_GLASS_MAGENTA
+    BLOCK_GLASS_MAGENTA,
+    BLOCK_WATER
 };
 
 
-
+//////// PHYSICS EVENT IDs ////////
+#define PHYSICS_EVENT_WATER 0
 
 #endif

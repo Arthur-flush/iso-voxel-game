@@ -4,6 +4,7 @@
 #include <SDL2/SDL.h>
 
 #include <blocks.hpp>
+#include <coords.hpp>
 
 #define IDENDICAL_LINE_MAX 41 //41
 

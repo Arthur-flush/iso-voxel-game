@@ -1,4 +1,6 @@
-#include <game.hpp>
+#include <projection_grid.hpp>
+#include <coords.hpp>
+#include <cmath>
 
 Projection_grid::Projection_grid()
 {
