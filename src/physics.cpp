@@ -17,7 +17,6 @@ void PhysicsEventWater::execute() {
             if (x != 0 && y != 0) continue; // skip diagonals
 
             block_coordonate neighbour = coord + coord3D({x, y, 0});
-            
 
             if ( 
                 // check if neighbour is in world
@@ -95,7 +94,7 @@ void PhysicsEngine::tick() {
     Uint64 delta = end - start;
 
     if (delta < tick_delay) {
-        std::cout << "sleeping for " << tick_delay - delta << " ms" << std::endl;
+        // std::cout << "sleeping for " << tick_delay - delta << " ms" << std::endl;
         std::this_thread::sleep_for(std::chrono::milliseconds(tick_delay - delta));
     }
     
