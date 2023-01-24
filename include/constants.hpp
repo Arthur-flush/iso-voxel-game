@@ -89,13 +89,23 @@ tested floats exemple :
 #define CHUNK_NON_UNIFORM 0b100000000
 
 //////// BLOCK ID ////////
-#define BLOCK_TRANSPARENT_LIMIT 241
-#define BLOCK_EMPTY     0
-#define BLOCK_DEBUG     1
-#define BLOCK_BLUE      2
-#define BLOCK_RED       3
-#define BLOCK_GREEN     4
-#define BLOCK_LIGHT     5
-#define BLOCK_SAND      17
-#define BLOCK_WATER     241
+#define BLOCK_TRANSPARENT_LIMIT     241
+#define BLOCK_EMPTY                 0
+#define BLOCK_DEBUG                 1
+#define BLOCK_BLUE                  2
+#define BLOCK_RED                   3
+#define BLOCK_GREEN                 4
+#define BLOCK_LIGHT                 5
+#define BLOCK_SAND                  17
+#define BLOCK_WATER                 241
+#define BLOCK_GLASS_COLORLESS       242
+#define BLOCK_GLASS_RED             243
+#define BLOCK_GLASS_BLUE            244
+#define BLOCK_GLASS_GREEN           245
+#define BLOCK_GLASS_YELLOW          246
+#define BLOCK_GLASS_CYAN            247
+#define BLOCK_GLASS_MAGENTA         248
+
+
+
 #endif

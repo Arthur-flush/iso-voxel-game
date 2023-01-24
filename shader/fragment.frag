@@ -20,7 +20,6 @@ layout (location = 5) uniform ivec4 win_const;
 layout (location = 6) uniform float sprite_size;
 layout (location = 7) uniform int block_size;
 layout (location = 8) uniform int atlas_size;
-layout (location = 9) uniform int max_height_render;
 
 uint render_flagsl;
 uint render_flagsr;
@@ -495,22 +494,12 @@ void main (void)
 
     vec4 pixel_AO = texture(ao, texCoord);
 
-    handle_depth();
-
     //////////////////////// FACE CULLING /////////////////////////
-    if(pixel_norm.g == 1 && render_flagsl < 128) discard;
-
     if(pixel_norm.r == 1 && render_flagsr < 128) discard;
 
-    if(pixel_norm.b == 1 && render_flagst < 128 && id != 240)
-    {
-        pixel.rgb = rgb2hsv(pixel.rgb);
-        // pixel.g = 0.0;
-        pixel.b = pixel.b/4;
-        fragColor.rgb = hsv2rgb(pixel.rgb);
-        fragColor.a = 1.0;
-        return;
-    }
+    if(pixel_norm.g == 1 && render_flagsl < 128) discard;
+    
+    if(pixel_norm.b == 1 && render_flagst < 128) discard;
     ////////////////////////////////////////////////////////////////
 
     ///////////////////////// BASIC BORDER //////////////////////////
@@ -542,6 +531,7 @@ void main (void)
     //////////////////// TRANSPARENT FRAGMENTS /////////////////////
     if(pixel.a > 0 && pixel.a != 1)
     {
+        handle_depth();
         fragColor = pixel;
 
         if(id == 240) // water
@@ -552,6 +542,10 @@ void main (void)
         {
             handle_glass(pixel);
         }
+        else if (id > 240) { // glass
+            handle_glass(pixel);
+        }
+
 
         // PixelTint.rgb = vec3(0.5);
         fragColor.rgb *= vec3(PixelTint);
@@ -569,5 +563,6 @@ void main (void)
     
 
     PixelTint.a = 1;
+    handle_depth();
     fragColor = pixel * PixelTint;
 }

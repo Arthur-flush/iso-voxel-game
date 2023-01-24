@@ -1,9 +1,9 @@
 #ifndef BLOCKS_HPP
 #define BLOCKS_HPP
 
-#include <SDL2/SDL.h>
-
 #include <constants.hpp>
+
+#include <SDL2/SDL.h>
 
 struct block
 {

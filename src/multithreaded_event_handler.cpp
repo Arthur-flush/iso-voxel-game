@@ -172,6 +172,7 @@ void Multithreaded_Event_Handler::handle()
             }
 
             SecondaryThread_opcode |= STHREAD_OP_PG_BLOCK_VISIBLE;
+            SecondaryThread_opcode |= STHREAD_OP_PG_BLOCK_VISIBLE;
 
             RE.refresh_sprite_size();
             RE.projection_grid.refresh_visible_frags(RE.target, RE.screen->w, RE.screen->h, RE.block_onscreen_size);
@@ -181,6 +182,7 @@ void Multithreaded_Event_Handler::handle()
 
             RE.target.x += event.data.target.x;
             RE.target.y += event.data.target.y;
+            SecondaryThread_opcode |= STHREAD_OP_PG_BLOCK_VISIBLE;
             SecondaryThread_opcode |= STHREAD_OP_PG_BLOCK_VISIBLE;
 
             RE.refresh_sprite_size();

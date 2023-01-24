@@ -114,12 +114,14 @@ void Game::generate_debug_world()
             {
                 if(wx < 4 || wy < 4 || z == 0 || wz2 > wx/5 || wz2 > wy/5)
                     world.chunks[x][y][z].blocks[i][j][k].id = BLOCK_SAND;
+                    world.chunks[x][y][z].blocks[i][j][k].id = BLOCK_SAND;
             }
 
             if(wz < 42 && !world.chunks[x][y][z].blocks[i][j][k].id)
                 world.chunks[x][y][z].blocks[i][j][k].id = BLOCK_WATER;
 
             if(wz < 42 && (wx == world.max_block_coord.x-1 || wy == world.max_block_coord.y-1))
+                world.chunks[x][y][z].blocks[i][j][k].id = BLOCK_DEBUG;
                 world.chunks[x][y][z].blocks[i][j][k].id = BLOCK_DEBUG;
             
             if(wx == 150)
@@ -187,8 +189,9 @@ void Game::init(GPU_Target* _screen)
 
 int Game::load_world(std::string filename, bool new_size, bool recenter_camera)
 {
-    // Uint64 start = Get_time_ms();
-    // Uint64 end;
+    Uint64 start = Get_time_ms();
+    Uint64 end_load;
+    Uint64 end_refresh;
 
     std::string total_filename = "saves/";
 
@@ -197,6 +200,7 @@ int Game::load_world(std::string filename, bool new_size, bool recenter_camera)
     total_filename.append("/world.isosave");
 
     int status = world.load_from_file(total_filename.c_str());
+    end_load = Get_time_ms();
 
     if(status == 0) 
     {
@@ -221,6 +225,14 @@ int Game::load_world(std::string filename, bool new_size, bool recenter_camera)
         }
 
         refresh_world_render();
+
+        end_refresh = Get_time_ms();
+
+        std::cout << "Loaded " << world.max_chunk_coord.x << "x" << world.max_chunk_coord.y << "x" << world.max_chunk_coord.z << " world successfully" << std::endl;
+        std::cout << "Load time: " << end_load-start << "ms" << std::endl;
+        std::cout << "Refresh time: " << end_refresh-end_load << "ms" << std::endl;
+        std::cout << "Total time: " << end_refresh-start << "ms" << std::endl;
+
     }
     else
         std::cout << "world load failed ._. !\n";
@@ -469,6 +481,7 @@ void Game::input_maingame()
 
                         case SDLK_F6:
                         {
+                            Uint64 start = Get_time_ms();
                             std::string total_filename = "saves/";
                             total_filename.append(Current_world_name);
                             // total_filename.append("plain");
@@ -476,9 +489,11 @@ void Game::input_maingame()
 
                             status = world.save_to_file(total_filename);
 
+                            Uint64 end = Get_time_ms();
                             if(status == 0)
                             {
                                 std::cout << "world saved !\n";
+                                std::cout << "time: " << end - start << " ms\n";
                             }
                             else
                             {
@@ -487,10 +502,34 @@ void Game::input_maingame()
                             break;
                         }
 
-                        case SDLK_F7 :
-                            if(!GameEvent.is_NFS_reading_to_wpg)
-                                load_world(Current_world_name);
-                        break;
+                        case SDLK_F7: {
+                            Uint64 start = Get_time_ms();
+
+                            status = world.load_from_file("test.worldsave");
+
+                            if(status == 0) 
+                            {
+                                std::cout << "world load successfully :)\n";
+
+                                RE.world = world;
+                                world.compress_all_chunks();
+
+
+                                GameEvent.drop_all_nfs_event();
+
+                                RE.projection_grid.clear();
+                                RE.projection_grid.save_curr_interval();
+                                // GameEvent.add_nfs_event(NFS_OP_PG_ONSCREEN);
+                                RE.refresh_pg_onscreen();
+                                RE.refresh_pg_block_visible();
+                                GameEvent.add_nfs_event(NFS_OP_ALL_BLOCK_VISIBLE);
+                                GameEvent.add_nfs_event(NFS_OP_ALL_RENDER_FLAG);
+
+                            }
+                            else
+                                std::cout << "world load failed ._. !\n";
+                            break;
+                        }
 
                         case SDLK_r :
                             RE.projection_grid.save_curr_interval();
@@ -532,7 +571,8 @@ void Game::input_maingame()
                 break;
 
             case SDL_MOUSEMOTION :
-                if(event.motion.state == SDL_BUTTON_RMASK)
+                // std::cout << event.motion.state << '\n';
+                if(event.motion.state == SDL_BUTTON_LMASK)
                 {
                     GameEvent.add_event(GAME_EVENT_CAMERA_MOUVEMENT, (pixel_coord){event.motion.xrel, event.motion.yrel});
                 }

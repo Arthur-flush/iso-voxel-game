@@ -1,22 +1,5 @@
 #include <game.hpp>
 
-void print_features()
-{
-    GPU_RendererID test[32];
-    GPU_GetRegisteredRendererList(test);
-
-    for(int i = 0; i < GPU_GetNumRegisteredRenderers(); i++)
-    {
-        std::cout << test[i].name << '\n';
-    }
-    std::cout << GPU_GetCurrentRenderer()->id.name << '\n';
-
-    std::cout << "vsync : " << GPU_IsFeatureEnabled(GPU_INIT_ENABLE_VSYNC) << "\n";    
-    std::cout << "double buff : " << !GPU_IsFeatureEnabled(GPU_INIT_DISABLE_DOUBLE_BUFFER) << "\n";    
-    std::cout << "geometry shaders : " << GPU_IsFeatureEnabled(GPU_FEATURE_ALL_SHADERS) << "\n";
-
-}
-
 int main(int argc, char *argv[])
 {
     system("cls");

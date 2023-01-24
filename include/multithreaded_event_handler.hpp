@@ -7,9 +7,12 @@
 #include <render_engine.hpp>
 
 // "scale" must be given as a float
+// "scale" must be given as a float
 #define GAME_EVENT_NEWSCALE                  0
 // "scale" must be given as a float
+// "scale" must be given as a float
 #define GAME_EVENT_ADDSCALE                  1
+// add given pixel_coord to the Render_Engine::target
 // add given pixel_coord to the Render_Engine::target
 #define GAME_EVENT_CAMERA_MOUVEMENT          2
 // replace the world's block at the given coord3D coordonate with the given block_id
@@ -27,6 +30,7 @@
 #define GAME_EVENT_INIT_WORLD_RENDER_FLAGS   7
 
 #define STHREAD_OP_PG_BLOCK_VISIBLE     0b00000010
+#define STHREAD_OP_PG_BLOCK_VISIBLE     0b00000010
 #define STHREAD_OP_ALL_BLOCK_VISBLE     0b00000100
 #define STHREAD_OP_ALL_RENDER_FLAG      0b00001000
 #define STHREAD_OP_SINGLE_CHUNK_POS     0b00010000
@@ -38,6 +42,15 @@
 #define NFS_OP_ALL_RENDER_FLAG          2
 #define NFS_OP_PG_ONSCREEN              3
 #define NFS_OP_PG_MHR                   4
+
+// Function that will be runed on the Secondary thread
+// It is frame sensitive, so the game will wait for this 
+// function to signal Multithreaded_Event_Handler::new_frame_to_render 
+// before passing to the next frame
+int SecondaryThread_operations(void *);
+
+// Function that will be runed on the Non Frame Sensitive Operations thread
+int NFS_operations(void *);
 
 // Function that will be runed on the Secondary thread
 // It is frame sensitive, so the game will wait for this 
@@ -89,12 +102,17 @@ class Multithreaded_Event_Handler
         Multithreaded_Event_Handler(Render_Engine&);
         ~Multithreaded_Event_Handler();
 
+        Multithreaded_Event_Handler(Render_Engine&);
+        ~Multithreaded_Event_Handler();
+
         bool game_is_running;
         SDL_mutex *init_cond;
         SDL_cond  *secondary_frame_op_finish;
 
         /********* Event OP ************/
+        /********* Event OP ************/
 
+        // Add an event
         // Add an event
         void add_event(game_event&);
         void add_event(const int);
@@ -109,10 +127,16 @@ class Multithreaded_Event_Handler
         // Handle all gamevent previously pushed
         // Prepare all secondary thread operation and send them to the corresponding thread
         // It does not include nfs events
+        
+        // Handle all gamevent previously pushed
+        // Prepare all secondary thread operation and send them to the corresponding thread
+        // It does not include nfs events
         void handle();
+        /****************************/
         /****************************/
 
         /********* NFS OP ************/
+
 
         SDL_Thread *NFS_Thread;
         SDL_cond *new_nfs_event;
@@ -124,6 +148,7 @@ class Multithreaded_Event_Handler
 
         // Drop all Non Frame Sensitive operation from the corresponding thread
         void drop_all_nfs_event();
+
 
         /****************************/
 };
