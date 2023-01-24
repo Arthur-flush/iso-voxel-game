@@ -25,4 +25,3 @@ PHONY : clean
 clean : 
 	$(DEL) $(EXEC) obj\*.o
 
-# modif le clean pour windows
