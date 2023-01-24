@@ -9,6 +9,49 @@ layout (location = 6) uniform sampler2D iChannel0;
 
 out vec4 fragColor;
 
+const uint angle = 1000000;
+vec4 Rainbow() // HSV to RGB where H is the texCoord.x
+{
+    float H = mod(texCoord.x * 360.0 + (1 - texCoord.y * 2 * ((mod(texCoord.y, 2)) - 0.5)) * (angle - angle * 0.5) + mod(Time / 4.0, 360), 360);
+    float S = 1;
+    float V = 1;
+
+    float C = V * S;
+    float X = C * (1.0 - abs(mod(H / 60.0, 2.0) - 1));
+    float m = V - C;
+
+    vec3 color = vec3(0, 0, 0);
+
+    if (H >= 0 && H < 60)
+    {
+        color = vec3(C, X, 0);
+    }
+    else if (H >= 60 && H < 120)
+    {
+        color = vec3(X, C, 0);
+    }
+    else if (H >= 120 && H < 180)
+    {
+        color = vec3(0, C, X);
+    }
+    else if (H >= 180 && H < 240)
+    {
+        color = vec3(0, X, C);
+    }
+    else if (H >= 240 && H < 300)
+    {
+        color = vec3(X, 0, C);
+    }
+    else if (H >= 300 && H < 360)
+    {
+        color = vec3(C, 0, X);
+    }
+
+    color = (color + m);
+
+    return vec4(color, 1);
+}
+
 vec3 rgb2hsv(vec3 c)
 {
     vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);

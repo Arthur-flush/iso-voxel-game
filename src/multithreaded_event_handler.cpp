@@ -1,22 +1,5 @@
 #include <game.hpp>
 
-std::string format(unsigned long long i) {
-  char buffer[128]; // can be adapted more tightly with std::numeric_limits
-
-  char* p = buffer + 128;
-  *(--p) = '\0';
-
-  unsigned char count = 0;
-  while (i != 0) {
-    *(--p) = '0' + (i % 10);
-    i /= 10;
-
-    if (++count == 3) { count = 0; *(--p) = ' '; }
-  }
-
-  return p;
-}
-
 Multithreaded_Event_Handler::Multithreaded_Event_Handler(Render_Engine &_RE) : RE{_RE}
 {
     init_cond = SDL_CreateMutex();
@@ -95,17 +78,6 @@ void Multithreaded_Event_Handler::add_event(const int _id, const block_coordonat
     add_event(new_event);
 }
 
-void Multithreaded_Event_Handler::add_event(const int _id, const block_coordonate coord, Uint16 _blockid)
-{
-    game_event new_event;
-
-    new_event.id = _id;
-    new_event.data.coord1 = coord;
-    new_event.data.blockid = _blockid;
-
-    add_event(new_event);
-}
-
 void Multithreaded_Event_Handler::add_event(const int _id, const world_coordonate coord, Uint16 _blockid)
 {
     game_event new_event;
@@ -134,8 +106,6 @@ void Multithreaded_Event_Handler::handle()
 
     SecondaryThread_opcode = 0;
 
-    bool refresh_identical_line = false;
-
     while(!event_queue.empty())
     {
         game_event &event = event_queue.front();
@@ -146,7 +116,8 @@ void Multithreaded_Event_Handler::handle()
 
             RE.window.scale = event.data.scale;
 
-            SecondaryThread_opcode |= STHREAD_OP_PG_BLOCK_VISIBLE;
+            SecondaryThread_opcode |= STHREAD_OP_BLOCK_ONSCREEN;
+            SecondaryThread_opcode |= STHREAD_OP_ALL_CHUNK_POS;
 
             RE.refresh_sprite_size();
             RE.projection_grid.refresh_visible_frags(RE.target, RE.screen->w, RE.screen->h, RE.block_onscreen_size);
@@ -171,8 +142,10 @@ void Multithreaded_Event_Handler::handle()
                 RE.target.y = (RE.target.y)/2 + (RE.window.size.y*0.25);
             }
 
-            SecondaryThread_opcode |= STHREAD_OP_PG_BLOCK_VISIBLE;
+            SecondaryThread_opcode |= STHREAD_OP_BLOCK_ONSCREEN;
+            SecondaryThread_opcode |= STHREAD_OP_ALL_CHUNK_POS;
 
+            // std::cout << "Scale : " << 1.0/RE.window.scale << '\n'; 
             RE.refresh_sprite_size();
             RE.projection_grid.refresh_visible_frags(RE.target, RE.screen->w, RE.screen->h, RE.block_onscreen_size);
             break;
@@ -181,251 +154,58 @@ void Multithreaded_Event_Handler::handle()
 
             RE.target.x += event.data.target.x;
             RE.target.y += event.data.target.y;
-            SecondaryThread_opcode |= STHREAD_OP_PG_BLOCK_VISIBLE;
+            SecondaryThread_opcode |= STHREAD_OP_ALL_CHUNK_POS;
 
             RE.refresh_sprite_size();
             RE.projection_grid.refresh_visible_frags(RE.target, RE.screen->w, RE.screen->h, RE.block_onscreen_size);
+
+            // system("cls");
+            // std::cout << "PROJECTION GRID VISIBLE FRAGS :\n";
+            // std::cout << RE.projection_grid.visible_frags[2][0].beg << ' ';
+            // std::cout << RE.projection_grid.visible_frags[2][0].end << '\n';
+            // std::cout << RE.projection_grid.visible_frags[2][1].beg << ' ';
+            // std::cout << RE.projection_grid.visible_frags[2][1].end << '\n';
+            break;
+        
+        case GAME_EVENT_SINGLE_CHUNK_POS_REFRESH :
+
+            if(event.data.coord1.chunk.x >= RE.world.min_chunk_coord.x &&
+               event.data.coord1.chunk.y >= RE.world.min_chunk_coord.y &&
+               event.data.coord1.chunk.z >= RE.world.min_chunk_coord.z &&
+               event.data.coord1.chunk.x <= RE.world.max_chunk_coord.x &&
+               event.data.coord1.chunk.y <= RE.world.max_chunk_coord.y &&
+               event.data.coord1.chunk.z <= RE.world.max_chunk_coord.z)
+               {
+                STO_data.coord1.chunk = event.data.coord1.chunk;   
+                SecondaryThread_opcode |= STHREAD_OP_SINGLE_CHUNK_POS;
+               }
+
+            break;
+        
+        case GAME_EVENT_HIGHLIGHT_CHANGE : // old
+            {
+                RE.highlight_coord  = event.data.coord1;
+                RE.highlight_wcoord = {event.data.coord1.x+event.data.coord1.chunk.x*CHUNK_SIZE,
+                                       event.data.coord1.y+event.data.coord1.chunk.y*CHUNK_SIZE,
+                                       event.data.coord1.z+event.data.coord1.chunk.z*CHUNK_SIZE
+                                      };
+            }
             break;
 
-        case GAME_EVENT_SINGLE_BLOCK_MOD :
-        {
-            if(RE.highlight_wcoord2.x == -1)
+        case GAME_EVENT_SINGLE_CHUNK_MOD :
+            
+            if(RE.world.modify_block(event.data.wcoord1, event.data.blockid))
             {
-                if(RE.world.modify_block(event.data.wcoord1, event.data.blockid))
-                {
-                    block_coordonate bc = RE.world.convert_wcoord(event.data.wcoord1.x, event.data.wcoord1.y, event.data.wcoord1.z);
+                block_coordonate bc = RE.world.convert_wcoord(event.data.wcoord1.x, event.data.wcoord1.y, event.data.wcoord1.z);
 
-                    RE.refresh_block_visible(bc.chunk, bc.x, bc.y, bc.z);
-                    RE.refresh_block_render_flags(bc.chunk, bc.x, bc.y, bc.z);
+                RE.refresh_block_visible(bc.chunk, bc.x, bc.y, bc.z);
+                RE.refresh_block_render_flags(bc.chunk, bc.x, bc.y, bc.z);
 
-                    // SecondaryThread_opcode |= STHREAD_OP_PG_BLOCK_VISIBLE;
-                }
+                RE.projection_grid.refresh_all_identical_line();  
+
+                SecondaryThread_opcode |= STHREAD_OP_ALL_CHUNK_POS;
             }
-            else if(RE.highlight_wcoord.x != -1)
-            {
-                int xbeg = RE.highlight_wcoord.x;
-                int xend = RE.highlight_wcoord2.x;
-
-                int ybeg = RE.highlight_wcoord.y;
-                int yend = RE.highlight_wcoord2.y;
-
-                int zbeg = RE.highlight_wcoord.z;
-                int zend = RE.highlight_wcoord2.z;
-
-                if(RE.highlight_wcoord.x > RE.highlight_wcoord2.x)
-                {
-                    xbeg = RE.highlight_wcoord2.x;
-                    xend = RE.highlight_wcoord.x;
-                }
-
-                if(RE.highlight_wcoord.y > RE.highlight_wcoord2.y)
-                {
-                    ybeg = RE.highlight_wcoord2.y;
-                    yend = RE.highlight_wcoord.y;
-                }
-
-                if(RE.highlight_wcoord.z > RE.highlight_wcoord2.z)
-                {
-                    zbeg = RE.highlight_wcoord2.z;
-                    zend = RE.highlight_wcoord.z;
-                }
-
-                // Uint64 start = Get_time_ms();
-                
-                Uint64 estimate_itcounter = (Uint64)(yend-ybeg+1)*(Uint64)(xend-xbeg+1)*(Uint64)(zend-zbeg+1);
-
-                // Uint64 itcounter = 0;
-
-                if(estimate_itcounter < 30000)
-                {
-                    for(int y = ybeg; y <= yend; y ++)
-                    {
-                        for(int x = xbeg; x <= xend; x ++)
-                        for(int z = zbeg; z <= zend; z ++)
-                        {
-                            if(RE.world.modify_block({x, y, z}, event.data.blockid))
-                            {
-                                block_coordonate bc = RE.world.convert_wcoord(x, y, z);
-
-                                RE.refresh_block_visible(bc.chunk, bc.x, bc.y, bc.z);
-                                // RE.refresh_block_render_flags(bc.chunk, bc.x, bc.y, bc.z);
-
-
-                                int _xbeg = x > 0 ? x-1 : 0;
-                                int _xend = x < RE.world.max_block_coord.x ? x+1 : RE.world.max_block_coord.x;
-
-                                int _ybeg = y > 0 ? y-1 : 0;
-                                int _yend = y < RE.world.max_block_coord.y ? y+1 : RE.world.max_block_coord.y;
-
-                                int _zbeg = z > 0 ? z-1 : 0;
-                                int _zend = z < RE.world.max_block_coord.z ? z+1 : RE.world.max_block_coord.z;
-
-                                for(int _x = _xbeg; _x <= _xend; _x++)
-                                for(int _y = _ybeg; _y <= _yend; _y++)
-                                for(int _z = _zbeg; _z <= _zend; _z++)
-                                {
-                                    coord3D c = RE.projection_grid.convert_wcoord(_x, _y, _z);
-                                    RE.set_block_renderflags(c.x, c.y, c.z);
-                                }
-                            }
-                        }
-
-                        // RE.refresh_line_shadows(0, xend, y, zend);
-                    }
-
-                    RE.refresh_line_shadows(RE.highlight_wcoord, RE.highlight_wcoord2);
-                }
-                else
-                {
-                    if(RE.highlight_type != HIGHLIGHT_VOLUME)
-                    {
-                        for(int y = ybeg; y <= yend; y ++)
-                        for(int x = xbeg; x <= xend; x ++)
-                        for(int z = zbeg; z <= zend; z ++)
-                        {
-                            RE.world.modify_block({x, y, z}, event.data.blockid);
-                        }
-                    }
-                    else
-                    {
-
-                        int chunk_xbeg = (xbeg + CHUNK_SIZE - (xbeg%CHUNK_SIZE))/CHUNK_SIZE;
-                        chunk_xbeg = xbeg%CHUNK_SIZE ? chunk_xbeg : xbeg/CHUNK_SIZE;
-                        int chunk_xend = (xend - (xend%CHUNK_SIZE))/CHUNK_SIZE;
-
-                        int chunk_ybeg = (ybeg + CHUNK_SIZE - (ybeg%CHUNK_SIZE))/CHUNK_SIZE;
-                        chunk_ybeg = ybeg%CHUNK_SIZE ? chunk_ybeg : ybeg/CHUNK_SIZE;
-                        int chunk_yend = (yend - (yend%CHUNK_SIZE))/CHUNK_SIZE;
-
-                        int chunk_zbeg = (zbeg + CHUNK_SIZE - (zbeg%CHUNK_SIZE))/CHUNK_SIZE;
-                        chunk_zbeg = zbeg%CHUNK_SIZE ? chunk_zbeg : zbeg/CHUNK_SIZE;
-                        int chunk_zend = (zend - (zend%CHUNK_SIZE))/CHUNK_SIZE;
-
-                        int chunk_xbeg_wvp = chunk_xbeg;
-                        int chunk_xend_wvp = chunk_xend;
-                        int chunk_ybeg_wvp = chunk_ybeg;
-                        int chunk_yend_wvp = chunk_yend;
-                        int chunk_zbeg_wvp = chunk_zbeg;
-                        int chunk_zend_wvp = chunk_zend;
-
-                        if(RE.world.world_view_position%2)
-                        {
-                            chunk_xbeg_wvp = chunk_ybeg;
-                            chunk_xend_wvp = chunk_yend;
-
-                            chunk_ybeg_wvp = chunk_xbeg;
-                            chunk_yend_wvp = chunk_xend;
-                        }
-
-                        if(RE.world.world_view_position == 1 || RE.world.world_view_position == 2)
-                        {
-                            chunk_ybeg_wvp = RE.world.max_chunk_coord.y-chunk_ybeg_wvp;
-                            chunk_yend_wvp = RE.world.max_chunk_coord.y-chunk_yend_wvp;
-
-                            int tmp = chunk_ybeg_wvp+1;
-                            chunk_ybeg_wvp = chunk_yend_wvp+1;
-                            chunk_yend_wvp = tmp;
-                        }
-
-                        if(RE.world.world_view_position == 3 || RE.world.world_view_position == 2)
-                        {
-                            chunk_xbeg_wvp = RE.world.max_chunk_coord.x-chunk_xbeg_wvp;
-                            chunk_xend_wvp = RE.world.max_chunk_coord.x-chunk_xend_wvp;
-
-                            int tmp = chunk_xbeg_wvp+1;
-                            chunk_xbeg_wvp = chunk_xend_wvp+1;
-                            chunk_xend_wvp = tmp;
-                        }
-
-                        for(int cx = chunk_xbeg_wvp; cx < chunk_xend_wvp; cx++)
-                        for(int cy = chunk_ybeg_wvp; cy < chunk_yend_wvp; cy++)
-                        for(int cz = chunk_zbeg_wvp; cz < chunk_zend_wvp; cz++)
-                        {
-                            // itcounter += CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
-                            memset(RE.world.chunks[cx][cy][cz].blocks, event.data.blockid, CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE * sizeof(block));
-                            RE.world.chunks[cx][cy][cz].compress_value = event.data.blockid;
-                        }
-
-                    
-                        for(int z = zbeg; z <= zend; z ++)
-                            {
-
-                                for(int y = ybeg; y <= yend; y ++)
-                                {
-
-                                    for(int x = xbeg; x <= xend; x ++)
-                                    {
-                                        if(z >= chunk_zbeg*CHUNK_SIZE && z < chunk_zend*CHUNK_SIZE)
-                                            if(y >= chunk_ybeg*CHUNK_SIZE && y < chunk_yend*CHUNK_SIZE)
-                                                if(x == chunk_xbeg*CHUNK_SIZE)
-                                                    x = chunk_xend*CHUNK_SIZE;
-
-                                        RE.world.modify_block({x, y, z}, event.data.blockid);
-                                        // itcounter ++;
-                                    }
-                                    
-                                }
-
-                            }
-                    }
-
-                    RE.projection_grid.refresh_visible_frags(RE.target, RE.screen->w, RE.screen->h, RE.block_onscreen_size);
-
-                    drop_all_nfs_event();
-                    RE.projection_grid.clear();
-                    RE.projection_grid.save_curr_interval();
-                    RE.refresh_pg_onscreen();
-                    RE.refresh_pg_block_visible();
-                    add_nfs_event(NFS_OP_ALL_BLOCK_VISIBLE);
-                    add_nfs_event(NFS_OP_ALL_RENDER_FLAG); 
-                }
-
-                RE.highlight_wcoord2 = {-1, -1, -1};
-
-                // Uint64 end = Get_time_ms();
-                // std::locale::global(std::locale(""));
-                // std::cout << "\nPosing " << format(estimate_itcounter) << " blocks in " << end-start << " ms.";
-                // std::cout << "\nActually posed " << format(itcounter) << " blocks \n";
-                // SecondaryThread_opcode |= STHREAD_OP_PG_BLOCK_VISIBLE;  
-            }
-
-            RE.projection_grid.refresh_all_identical_line(); 
-        }
-            break;
-
-        case GAME_EVENT_SINGLE_BLOCK_MOD_ALT :
-            {
-                block_coordonate bc = event.data.coord1;
-
-                block *b = &RE.world.
-                            chunks
-                            [bc.chunk.x]
-                            [bc.chunk.y]
-                            [bc.chunk.z].
-                            blocks
-                            [bc.x]
-                            [bc.y]
-                            [bc.z];
-
-                if(!b->id)
-                {
-                    b->id = event.data.blockid;
-
-                    RE.refresh_block_visible(bc.chunk, bc.x, bc.y, bc.z);
-
-                    RE.world.compress_chunk(bc.chunk.x, bc.chunk.y, bc.chunk.z);
-
-                    coord3D wc = RE.world.convert_coord(bc);
-
-                    RE.refresh_line_shadows(wc.x, wc.x, wc.y, wc.z);
-
-                    coord3D pgc = RE.projection_grid.convert_wcoord(wc.x, wc.y, wc.z);
-                    RE.set_block_renderflags(pgc.x, pgc.y, pgc.z);
-
-                    refresh_identical_line = true;
-                }
-
-            }
+            
             break;
 
         case GAME_EVENT_INIT_WORLD_RENDER_FLAGS :
@@ -439,11 +219,6 @@ void Multithreaded_Event_Handler::handle()
     }
 
     SDL_UnlockMutex(init_cond);
-
-    if(refresh_identical_line)
-    {
-        RE.projection_grid.refresh_all_identical_line(); 
-    }
 
     if(SecondaryThread_opcode || !game_is_running)
     {
@@ -462,14 +237,22 @@ int SecondaryThread_operations(void *data)
 
         if(MEH->game_is_running)
         {
+            // std::cout << "STO fnct : Waiting for new_frame_to render\n";
             SDL_CondWait(MEH->new_frame_to_render, MEH->init_cond);
+            // std::cout << "STO fnct : Receiving signal new_frame_to render\n";
+
+            if(MEH->SecondaryThread_opcode & STHREAD_OP_BLOCK_ONSCREEN)
+                MEH->RE.refresh_sprite_size();
 
             ///////////////////// BLOCK VISIBLE  //////////////////////
             if(MEH->SecondaryThread_opcode & STHREAD_OP_ALL_BLOCK_VISBLE)
                 MEH->RE.refresh_all_block_visible2();
 
             else if(MEH->SecondaryThread_opcode & STHREAD_OP_SINGLE_BLOCK_VISBLE)
+            {
                 MEH->RE.refresh_block_visible(MEH->STO_data.coord1.chunk, MEH->STO_data.coord1.x, MEH->STO_data.coord1.y, MEH->STO_data.coord1.z);
+            }
+            ////////////////////////////////////////////////////////////
 
             ////////////////////// RENDER FLAGS  ///////////////////////
             if(MEH->SecondaryThread_opcode & STHREAD_OP_ALL_RENDER_FLAG)
@@ -483,17 +266,30 @@ int SecondaryThread_operations(void *data)
                 MEH->RE.refresh_block_render_flags(MEH->STO_data.coord1.chunk, MEH->STO_data.coord1.x, MEH->STO_data.coord1.y, MEH->STO_data.coord1.z);
                 MEH->RE.projection_grid.refresh_all_identical_line();
             }
+            ////////////////////////////////////////////////////////////
 
-            /////////////////////// PG BLOCK VISIBLE  ////////////////////////
-            if(MEH->SecondaryThread_opcode & STHREAD_OP_PG_BLOCK_VISIBLE)
+            /////////////////////// CHUNK POS  ////////////////////////
+            if(MEH->SecondaryThread_opcode & STHREAD_OP_ALL_CHUNK_POS)
             {
                 MEH->RE.refresh_pg_block_visible();
             }
+            
+            // else if(MEH->SecondaryThread_opcode & STHREAD_OP_SINGLE_CHUNK_POS)
+            //     MEH->RE.refresh_chunk_pos(MEH->STO_data.coord1.chunk);
+            ////////////////////////////////////////////////////////////
         }
+
+        // GPU_Rect src_rect = {0, 256, MOSAIC_TEXTURE_SIZE, MOSAIC_TEXTURE_SIZE};
+        // GPU_Rect dst_rect = {0, 0, 0, 0};
+        // GPU_SetColor(MEH->RE.Textures[MOSAIC]->ptr, {128, 128, 128, 0});
+        // GPU_BlitRect(MEH->RE.Textures[MOSAIC]->ptr, &src_rect, MEH->RE.screen, &dst_rect);
 
         SDL_UnlockMutex(MEH->init_cond);
         SDL_CondSignal(MEH->secondary_frame_op_finish);
+        // std::cout << "STO fnct : Signaling secondary_frame_op_finish\n";
     }
+
+    // std::cout << "STO fnct : closing secondary thread\n";
 
     return 0;
 }
@@ -506,7 +302,9 @@ void Multithreaded_Event_Handler::add_nfs_event(const int nfs_event_id)
 
 void Multithreaded_Event_Handler::drop_all_nfs_event()
 {
-    while(nfs_event_queue.size() > 1)
+    // stop_nfs_op = false;
+
+    while(!nfs_event_queue.empty())
         nfs_event_queue.pop();
 }
 
@@ -516,6 +314,7 @@ int NFS_operations(void *data)
 
     int event;
     
+    // std::cout << "\n===> Launching NFS OP Thread\n";
     while(MEH->game_is_running)
     {
         SDL_LockMutex(MEH->nfs_mut);
@@ -530,8 +329,8 @@ int NFS_operations(void *data)
             while(!MEH->nfs_event_queue.empty())
             {
                 event = MEH->nfs_event_queue.front();
+                MEH->nfs_event_queue.pop();
 
-                MEH->is_NFS_reading_to_wpg = true;
                 switch (event)
                 {
                 case NFS_OP_ALL_BLOCK_VISIBLE :
@@ -545,8 +344,6 @@ int NFS_operations(void *data)
 
                 case NFS_OP_PG_ONSCREEN  : 
                     MEH->RE.refresh_pg_onscreen();
-                    MEH->RE.refresh_pg_block_visible();
-                    MEH->RE.projection_grid.refresh_all_identical_line();
                     break;
 
                 case NFS_OP_PG_MHR :
@@ -556,14 +353,13 @@ int NFS_operations(void *data)
                 default:
                     break;
                 }
-                MEH->is_NFS_reading_to_wpg = false;
-
-                MEH->nfs_event_queue.pop();
             }
         }
 
         SDL_UnlockMutex(MEH->nfs_mut);
     }
+
+    // std::cout <<  "\n===> Closing NFS OP Thread\n";
 
     return 0;
 }
