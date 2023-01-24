@@ -3,11 +3,12 @@
 
 #include <iostream>
 
-#define MAIN_GAME_VERSION "0.10.2"
+#define MAIN_GAME_VERSION "0.9.0"
 
 //////// WINDOW DEFAULT CONSTANTS ////////
 #define DEFAULT_WINDOWS_W 1920
 #define DEFAULT_WINDOWS_H 1080
+#define DEFAULT_RENDER_DISTANCE 1 // useless at this time
 
 //////// SCALE ////////
 /*
@@ -20,15 +21,14 @@ tested floats exemple :
 0.03125
 0.015625
 */
-#define DEFAULT_SCALE              (long double)0.03125
+#define DEFAULT_SCALE              (long double)0.125
 #define MAX_FLOAT_SCALE            (long double)8
 #define MIN_FLOAT_SCALE            (long double)0.0078125
-#define PANORAMA_SCALE_THRESHOLD   (long double)0.015625
+#define PANORAMA_SCALE_THRESHOLD   (long double)0.0625
 
 //////// GAME STATE ////////
 #define STATE_QUIT 0
 #define STATE_MAIN 1
-#define STATE_MENU 2
 
 //////// CHUNKS ////////
 #define CHUNK_SIZE 8
@@ -38,17 +38,11 @@ tested floats exemple :
 #define SAVE_ERROR_FILE_NOT_OPEN 1
 
 //////// HIGHLIGHT ////////
-#define HIGHLIGHT_MOD_NONE      0
-#define HIGHLIGHT_MOD_DELETE    1
-#define HIGHLIGHT_MOD_REPLACE   2
-#define HIGHLIGHT_MOD_PLACE     3
-#define HIGHLIGHT_MOD_PLACE_ALT 4
-
-#define HIGHLIGHT_BLOCKS      1
-#define HIGHLIGHT_FLOOR       2
-#define HIGHLIGHT_WALL_Y      3
-#define HIGHLIGHT_WALL_X      4
-#define HIGHLIGHT_VOLUME      5
+#define HIGHLIGHT_NONE        0
+#define HIGHLIGHT_REMOVE      1
+#define HIGHLIGHT_PLACE       2
+#define HIGHLIGHT_PLACE_ALT   3
+#define HIGHLIGHT_DEBUG       4
 
 //////// SHADER FEATURES ////////
 #define SFEATURE_GLOBAL_ILLUMINATION 1
@@ -56,8 +50,6 @@ tested floats exemple :
 #define SFEATURE_BLOCK_BORDERS       4
 #define SFEATURE_SHADOWS             8
 #define SFEATURE_BLOOM               16
-
-//////// RENDER FLAGS ////////
 #define SHADOW_TOP      128
 #define SHADOW_LEFT      64
 #define SHADOW_RIGHT     32
@@ -73,16 +65,12 @@ tested floats exemple :
 #define TEXTURE_BLOCK_ID      0b00000000
 #define TEXTURE_BACKGROUND_ID 0b11000000
 
-#define TEXTURE_UI_DEBUG 256
-
 #define BACKGROUND_SUNSET 0b11000000
 #define MOSAIC            0b00000001
 #define BLOCK_NORMAL      0b00000010
 #define BLOCK_AO          0b00000011
 #define BLOCK_HIGHLIGHT   0b00000100
-#define BLOCK_BORDER      0b00000101
-#define BLOCK_PARTS       0b00000110
-#define SHADERTEXT_WATER  0b00000111
+#define SHADERTEXT_WATER  0b00000101
 
 //////// CHUNK COMPRESSION ////////
 #define CHUNK_EMPTY       0b000000000

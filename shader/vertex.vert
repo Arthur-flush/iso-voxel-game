@@ -67,7 +67,5 @@ void main(void)
     final_Vertex.x = win_const.b + (sprite_size/2)*(x-y) + sprite_size*corner.x - sprite_size/2;
     final_Vertex.y = win_const.a + (sprite_size/4)*(x+y) + sprite_size*corner.y - sprite_size/2;
 
-    block_position = ivec2(x, y);
-
     gl_Position = gpu_ModelViewProjectionMatrix * vec4(final_Vertex, 1);
 }

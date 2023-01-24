@@ -62,14 +62,7 @@ void get_line_size()
 
 void determine_projection_grid_face()
 {
-    if(id < 240)
-    {
-        projection_grid_face = shadows_flags%4;
-    }
-    else
-    {
-        projection_grid_face = ((render_flagsr&32)/16) + ((render_flagst&32)/32);
-    }
+    projection_grid_face = shadows_flags%4;
 }
 
 void main()
@@ -81,31 +74,10 @@ void main()
     // if(projection_grid_face == 0)
     // line_size = 1;
 
-    uint x = 0;
-    uint y = block_position[0].y + Vblock_height[0];
-
-    if(projection_grid_face == 2)
-    {
-        x = block_position[0].x + Vblock_height[0];
-    }
-    if(projection_grid_face == 1)
-    {
-        x = block_position[0].x + Vblock_height[0];
-    }
-    if(projection_grid_face == 0)
-    {
-        x = block_position[0].x + Vblock_height[0];
-    }
-
-
-
     for(int i = 0; i < line_size; i++)
     {
         for(int j = 0; j < 3; j++)
         {
-            uint finalx = x;
-            uint finaly = y;
-
             vec3 VPos = final_Vertex[j];
 
             if(projection_grid_face == 2 || projection_grid_face == 0)
@@ -113,24 +85,19 @@ void main()
                 // axe y
                 VPos.x += (sprite_size/2)*(-i);
                 VPos.y += (sprite_size/4)*(i);
-
-                finaly = y+i;
             }
             if(projection_grid_face == 1)
             {
                 // axe x
                 VPos.x += (sprite_size/2)*(i);
                 VPos.y += (sprite_size/4)*(i);
-
-                finalx = x+i;
             }
 
             gl_Position = gpu_ModelViewProjectionMatrix * vec4(VPos, 1);
 
             MozCoord = VMozCoord[j];
 
-            // uint depth = Vblock_height[0];
-            uint depth = (finaly+finalx + 2*Vblock_height[0]);
+            uint depth = Vblock_height[0];
             block_info = id + (depth <<8);
 
             EmitVertex();
