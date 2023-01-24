@@ -9,7 +9,7 @@ out vec4 fragColor;
 
 void main (void)
 {
-    vec4 pixel = texture2D(world, texCoord);
+    vec4 pixel = texture(world, texCoord);
 
     fragColor = pixel;
 
