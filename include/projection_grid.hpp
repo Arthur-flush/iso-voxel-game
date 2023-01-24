@@ -2,31 +2,26 @@
 #define PROJECTION_GRID_HPP
 
 #include <SDL2/SDL.h>
-
-#include <constants.hpp>
 #include <coords.hpp>
 #include <blocks.hpp>
 
 #define IDENDICAL_LINE_MAX 41 //41
 
+void set_in_interval(int& x, const int min, const int max);
+
 struct screen_block
 {
-    // block *transparent_block;
-    // block *block;
-
     block transparent_block;
-    block block;
+    block opaque_block;
 
     Uint16 height;
     Uint16 x;
     Uint16 y;
-    // Uint16 x_transparent;
-    // Uint16 y_transparent;
+    Uint16 x_transparent;
+    Uint16 y_transparent;
     Uint16 height_transparent;
 
     bool is_on_screen;
-
-    bool is_updated; // old
 
     SDL_Color render_flags;
     SDL_Color render_flags_transparent;
@@ -41,7 +36,7 @@ struct interval
     int end;
 };
 
-struct projection_grid
+struct Projection_grid
 {
     public :
         int size[3][2];
@@ -49,10 +44,11 @@ struct projection_grid
         interval visible_frags_save[3][2];
         screen_block **pos[3];
 
-        projection_grid();
-        ~projection_grid();
+        Projection_grid();
+        ~Projection_grid();
 
         void init_pos(const int, const int, const int);
+        void free_pos();
         screen_block* get_pos(Uint8, Uint32, Uint32);
         screen_block* get_pos(chunk_coordonate, int, int , int);
         screen_block* get_pos_world(int, int , int);

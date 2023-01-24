@@ -36,11 +36,9 @@ Render_Engine::Render_Engine(struct World& _world) : world{_world}
     float global_illumination[4] = {1, 1, 1, 0.60};
     GPU_SetUniformfv(4, 4, 1, global_illumination);
 
-    debug = true;
-    current_block_tmp = BLOCK_SAND;
+    highlight_wcoord2 = {-1, -1, -1};
 }
 
-// à renommer
 void Render_Engine::refresh_sprite_size()
 {
     // std::cout << Textures[BLOCK_BLUE]->src.w;
@@ -146,27 +144,64 @@ void Render_Engine::set_block_renderflags(char face, int i, int j)
 
     if(sb->transparent_block.id)
     {
-        int dec = sb->height_transparent-sb->height;
+        block_coordonate bc = world.convert_wcoord(sb->x_transparent, sb->y_transparent, sb->height_transparent);
 
-        // if(face != 2)
-        // {
-        //     std::cout
-        //     << "debug "
-        //     << coord.x << ' ' << coord.y << ' ' << coord.z << " ("
-        //     << x << ' ' << y << ' ' << z << ")\n";
-        // }
+        sb->render_flags_transparent.r = world.get_block_id(bc.chunk, bc.x, bc.y+1, bc.z) ? 0 : 128;
+        sb->render_flags_transparent.g = world.get_block_id(bc.chunk, bc.x+1, bc.y, bc.z) ? 0 : 128;
+        sb->render_flags_transparent.b = world.get_block_id(bc.chunk, bc.x, bc.y, bc.z+1) ? 0 : 128;
 
-        sb->render_flags_transparent.r = world.get_block_id(coord, x+dec, y+dec+1, z+dec) ? 0 : 128;
-        sb->render_flags_transparent.g = world.get_block_id(coord, x+dec+1, y+dec, z+dec) ? 0 : 128;
-        sb->render_flags_transparent.b = world.get_block_id(coord, x+dec, y+dec, z+dec+1) ? 0 : 128;
+        Uint8 diff;
+        if(sb->height)
+        {
+            diff = (sb->height_transparent-sb->height);
+        }
+        else 
+        {
+            int shift = sb->x_transparent < sb->y_transparent ? sb->x_transparent : sb->y_transparent;
+            shift = shift < sb->height_transparent ? shift : sb->height_transparent;
 
-        Uint8 diff = (sb->height_transparent-sb->height);
+            diff = shift;
+        }
+
         diff = diff > 31 ? 31 : diff;
-        sb->render_flags_transparent.r &= 128;
-        sb->render_flags_transparent.r |= diff;
+        sb->render_flags_transparent.a &= (128+64+32);
+        sb->render_flags_transparent.a |= diff;
+
+        screen_block *sb_right = projection_grid.get_pos_world(sb->x_transparent, sb->y_transparent-1, sb->height_transparent-1);
+        // screen_block *sb_right2 = projection_grid.get_pos_world(sb->x, sb->y-1, sb->height);
+        if(sb_right)
+        {
+            diff = (sb->height_transparent-sb_right->height);
+            diff = diff > 31 ? 31 : diff;
+            sb->render_flags_transparent.r &= 128;
+            sb->render_flags_transparent.r |= diff;
+        }
+
+        screen_block *sb_left = projection_grid.get_pos_world(sb->x_transparent-1, sb->y_transparent, sb->height_transparent-1);
+        if(sb_left)
+        {
+            diff = (sb->height_transparent-sb_left->height);
+            diff = diff > 31 ? 31 : diff;
+            sb->render_flags_transparent.g &= 128;
+            sb->render_flags_transparent.g |= diff;
+        }
+
+        screen_block *sb_down = projection_grid.get_pos_world(sb->x_transparent, sb->y_transparent, sb->height_transparent-1);
+        if(sb_down)
+        {
+            diff = (sb->height_transparent-sb_down->height);
+            diff = diff > 31 ? 31 : diff;
+            sb->render_flags_transparent.b &= 128;
+            sb->render_flags_transparent.b |= diff;
+        }
+
+        // for borders
+        // sb->render_flags_transparent.r += world.get_block_id(coord, tx-1, ty, tz) ? 2 : 0;
+        // sb->render_flags_transparent.r += world.get_block_id(coord, tx, ty-1, tz) ? 4 : 0;
+        // sb->render_flags_transparent.r += world.get_block_id(coord, tx, ty, tz-1) ? 32 : 0;
     }
 
-    if(!sb->block.id)
+    if(!sb->opaque_block.id)
     {
         // std::cout
         // << "Can't find block for set_block_renderflags at "
@@ -179,9 +214,26 @@ void Render_Engine::set_block_renderflags(char face, int i, int j)
     render_flag.g = 0;
     render_flag.b = 0;
 
+    // for borders
+    render_flag.r += world.get_opaque_block_id(coord, x-1, y, z) ? 2 : 0;
+    render_flag.r += world.get_opaque_block_id(coord, x, y-1, z) ? 4 : 0;
+    render_flag.r += world.get_opaque_block_id(coord, x, y, z-1) ? 32 : 0;
+
     int left  = world.get_opaque_block_id(coord, x, y+1, z); 
     int right = world.get_opaque_block_id(coord, x+1, y, z);
     int top   = world.get_opaque_block_id(coord, x, y, z+1);
+
+    // t : corner left & l : corner top left
+    render_flag.b += !(render_flag.b & 80) && world.get_opaque_block_id(coord, x-1, y+1, z+1) ? 2 : 0;
+
+    // t : corner right & r : corner top right
+    render_flag.b += !(render_flag.b & 40) && world.get_opaque_block_id(coord, x+1, y-1, z+1) ? 1 : 0;
+
+    // r : left && l : right
+    render_flag.g += world.get_opaque_block_id(coord, x+1, y+1, z) ? 64 : 0;
+
+    // r : bottom left & l : bottom right
+    render_flag.g += !(render_flag.g & 72) && world.get_opaque_block_id(coord, x+1, y+1, z-1) ? 1 : 0;
 
     if(!left)
     {
@@ -191,7 +243,7 @@ void Render_Engine::set_block_renderflags(char face, int i, int j)
         render_flag.r += world.get_opaque_block_id(coord, x-1, y+1, z) ? 64 : 0;
 
         //AO RIGHT
-        render_flag.r += world.get_opaque_block_id(coord, x+1, y+1, z) ? 32 : 0;
+        // render_flag.r += world.get_opaque_block_id(coord, x+1, y+1, z) ? 32 : 0;
 
         //AO TOP
         render_flag.r += world.get_opaque_block_id(coord, x, y+1, z+1) ? 16 : 0;
@@ -200,10 +252,10 @@ void Render_Engine::set_block_renderflags(char face, int i, int j)
         render_flag.r += world.get_opaque_block_id(coord, x, y+1, z-1) ? 8 : 0;
 
         //AO CORNER TOP LEFT
-        render_flag.r += !(render_flag.r & 80) && world.get_opaque_block_id(coord, x-1, y+1, z+1) ? 4 : 0;
+        // render_flag.r += !(render_flag.r & 80) && world.get_opaque_block_id(coord, x-1, y+1, z+1) ? 4 : 0;
 
         //AO CORNER BOTTOM RIGHT
-        render_flag.r += !(render_flag.r & 40) && world.get_opaque_block_id(coord, x+1, y+1, z-1) ? 2 : 0;
+        // render_flag.r += !(render_flag.r & 40) && world.get_opaque_block_id(coord, x+1, y+1, z-1) ? 2 : 0;
 
         //AO CORNER BOTTOM LEFT
         render_flag.r += !(render_flag.r & 72) && world.get_opaque_block_id(coord, x-1, y+1, z-1) ? 1 : 0;
@@ -214,7 +266,7 @@ void Render_Engine::set_block_renderflags(char face, int i, int j)
         render_flag.g += 128;
 
         // AO LEFT
-        render_flag.g += world.get_opaque_block_id(coord, x+1, y+1, z) ? 64 : 0;
+        // render_flag.g += world.get_opaque_block_id(coord, x+1, y+1, z) ? 64 : 0;
 
         //AO RIGHT
         render_flag.g += world.get_opaque_block_id(coord, x+1, y-1, z) ? 32 : 0;
@@ -226,13 +278,13 @@ void Render_Engine::set_block_renderflags(char face, int i, int j)
         render_flag.g += world.get_opaque_block_id(coord, x+1, y, z-1) ? 8 : 0;
 
         //AO CORNER TOP RIGHT
-        render_flag.g += !(render_flag.g & 48) && world.get_opaque_block_id(coord, x+1, y-1, z+1) ? 4 : 0;
+        // render_flag.g += !(render_flag.g & 48) && world.get_opaque_block_id(coord, x+1, y-1, z+1) ? 4 : 0;
 
         //AO CORNER BOTTOM RIGHT
         render_flag.g += !(render_flag.g & 40) && world.get_opaque_block_id(coord, x+1, y-1, z-1) ? 2 : 0;
 
         //AO CORNER BOTTOM LEFT
-        render_flag.g += !(render_flag.g & 72) && world.get_opaque_block_id(coord, x+1, y+1, z-1) ? 1 : 0;
+        // render_flag.g += !(render_flag.g & 72) && world.get_opaque_block_id(coord, x+1, y+1, z-1) ? 1 : 0;
     }
 
     if(!top)
@@ -255,17 +307,17 @@ void Render_Engine::set_block_renderflags(char face, int i, int j)
         render_flag.b += !(render_flag.b & 96) && world.get_opaque_block_id(coord, x-1, y-1, z+1) ? 4 : 0;
 
         // AO CORNER LEFT 
-        render_flag.b += !(render_flag.b & 80) && world.get_opaque_block_id(coord, x-1, y+1, z+1) ? 2 : 0;
+        // render_flag.b += !(render_flag.b & 80) && world.get_opaque_block_id(coord, x-1, y+1, z+1) ? 2 : 0;
 
         // AO CORNER RIGHT
-        render_flag.b += !(render_flag.b & 40) && world.get_opaque_block_id(coord, x+1, y-1, z+1) ? 1 : 0;
+        // render_flag.b += !(render_flag.b & 40) && world.get_opaque_block_id(coord, x+1, y-1, z+1) ? 1 : 0;
     }
 }
 
 bool Render_Engine::render_block(const chunk_coordonate &wcoord, const chunk_coordonate &pgcoord, GPU_Rect& src_rect, GPU_Rect& dst_rect)
 {
     screen_block *sb = &projection_grid.pos[pgcoord.x][pgcoord.y][pgcoord.z];
-    block b = sb->block;
+    block b = sb->opaque_block;
 
     if(sb && sb->is_on_screen && b.id)
     {
@@ -284,6 +336,9 @@ bool Render_Engine::render_block(const chunk_coordonate &wcoord, const chunk_coo
         src_rect.y = sb->height;
 
         src_rect.w = MOSAIC_TEXTURE_SIZE+(256.0*sb->identical_line_counter);
+
+        // dst_rect.x = sb->x;
+        // dst_rect.y = sb->y;
 
         dst_rect.x = wcoord.x;
         dst_rect.y = wcoord.y;
@@ -344,13 +399,12 @@ bool Render_Engine::render_transparent_block(const chunk_coordonate &wcoord, con
 
     if(sb && sb->is_on_screen && b.id)
     {
-        sb->render_flags_transparent.a &= ~(0b11);
-        sb->render_flags_transparent.a += pgcoord.x;
-
-        Uint8 diff = (sb->height_transparent-sb->height);
-        diff = diff > 31 ? 31 : diff;
-        sb->render_flags_transparent.r &= 128;
-        sb->render_flags_transparent.r |= diff;
+        // sb->render_flags_transparent.a &= ~(0b11);
+        // sb->render_flags_transparent.a += pgcoord.x;
+        sb->render_flags_transparent.b &= ~(32);
+        sb->render_flags_transparent.g &= ~(32);
+        sb->render_flags_transparent.b += pgcoord.x%2 ? 32 : 0;
+        sb->render_flags_transparent.g += pgcoord.x&2 ? 32 : 0;
 
         GPU_SetColor(Textures[MOSAIC]->ptr, sb->render_flags_transparent);
 
@@ -383,14 +437,14 @@ void Render_Engine::render_transparent_world()
     GPU_Rect dst_rect = {0, 0, 0, 0};
 
     face = 0;
+    for(int j  = projection_grid.visible_frags[face][1].end; 
+            j >= projection_grid.visible_frags[face][1].beg; j--)
+
     for(int i = projection_grid.visible_frags[face][0].beg;
             i < projection_grid.visible_frags[face][0].end; i++)
 
-        for(int j  = projection_grid.visible_frags[face][1].end; 
-                j >= projection_grid.visible_frags[face][1].beg; j--)
-
             if(render_transparent_block({-j, i-j, 0}, {face, i, j}, src_rect, dst_rect))
-                j -= projection_grid.pos[face][i][j].identical_line_counter_transparent;
+                i += projection_grid.pos[face][i][j].identical_line_counter_transparent;
 
     face = 1;
     for(int j  = projection_grid.visible_frags[face][1].end; 
@@ -427,13 +481,95 @@ void Render_Engine::render_highlighted_blocks()
     {
         GPU_SetUniformi(8, BLOCK_TEXTURE_SIZE);
 
-        if(sb->height == highlight_wcoord.z)
-             GPU_SetColor(Textures[BLOCK_HIGHLIGHT]->ptr, sb->render_flags);
-        else
+
+        if(highlight_type >= HIGHLIGHT_FLOOR && highlight_wcoord2.x != -1 && highlight_wcoord.x != -1)
+        {
+            int xbeg = highlight_wcoord.x;
+            int xend = highlight_wcoord2.x;
+
+            int ybeg = highlight_wcoord.y;
+            int yend = highlight_wcoord2.y;
+
+            int zbeg = highlight_wcoord.z;
+            int zend = highlight_wcoord2.z;
+
+            if(highlight_wcoord.x > highlight_wcoord2.x)
+            {
+                xbeg = highlight_wcoord2.x;
+                xend = highlight_wcoord.x;
+            }
+
+            if(highlight_wcoord.y > highlight_wcoord2.y)
+            {
+                ybeg = highlight_wcoord2.y;
+                yend = highlight_wcoord.y;
+            }
+
+            if(highlight_wcoord.z > highlight_wcoord2.z)
+            {
+                zbeg = highlight_wcoord2.z;
+                zend = highlight_wcoord.z;
+            }
+
             GPU_SetColor(Textures[BLOCK_HIGHLIGHT]->ptr, {128, 128, 128, 0});
 
-        GPU_BlitRect(Textures[BLOCK_HIGHLIGHT]->ptr, &src_rect, screen2, &dst_rect);
+            // int xbeg_final = floor((2.0*(target.x - screen->w))/block_onscreen_size -1);
+            // int xend_final = floor((2.0*target.x)/block_onscreen_size + 1)+1;
+
+            // set_in_interval(xbeg_final, xbeg, xend);
+            // set_in_interval(xend_final, xbeg, xend);
+
+
+            for(int x = xbeg; x <= xend; x ++)
+            for(int y = ybeg; y <= yend; y ++)
+            for(int z = zbeg; z <= zend; z ++)
+            {
+                if(highlight_type == HIGHLIGHT_VOLUME && 
+                   (x != xend && y != yend && z != zend))
+                    continue;
+
+                int xspos = target.x + block_onscreen_half*(x - y - 1);
+                if(xspos < -block_onscreen_half || xspos > screen->w+block_onscreen_half)
+                    continue;
+                
+                int yspos = target.y + block_onscreen_quarter*(x + y - 2*z);
+                if(yspos < -block_onscreen_half || yspos > screen->h+block_onscreen_half)
+                    continue;
+
+                src_rect = {0, roundf(z), BLOCK_TEXTURE_SIZE, BLOCK_TEXTURE_SIZE};
+
+                dst_rect = {roundf(x-z),
+                            roundf(y-z),
+                            0, 0};
+                
+                sb = projection_grid.get_pos_world(x, y, z);
+
+                if(sb->height == z)
+                {
+                    GPU_SetColor(Textures[BLOCK_HIGHLIGHT]->ptr, sb->render_flags);
+                    GPU_BlitRect(Textures[BLOCK_HIGHLIGHT]->ptr, &src_rect, screen2, &dst_rect);
+                }
+
+                else if(sb->height <= z)
+                {
+                    GPU_SetColor(Textures[BLOCK_HIGHLIGHT]->ptr, {128, 128, 128, 0});
+                    GPU_BlitRect(Textures[BLOCK_HIGHLIGHT]->ptr, &src_rect, screen2, &dst_rect);
+                }
+            }
+
+
+        }
+        else
+        {
+            if(sb->height == highlight_wcoord.z)
+                GPU_SetColor(Textures[BLOCK_HIGHLIGHT]->ptr, sb->render_flags);
+            else
+                GPU_SetColor(Textures[BLOCK_HIGHLIGHT]->ptr, {128, 128, 128, 0});
+
+            GPU_BlitRect(Textures[BLOCK_HIGHLIGHT]->ptr, &src_rect, screen2, &dst_rect);
+        }
     }
+
 
     GPU_SetUniformi(8, MOSAIC_TEXTURE_SIZE);
 }
@@ -444,16 +580,16 @@ void Render_Engine::refresh_block_visible(const chunk_coordonate& coord, const i
     int wy = y + coord.y*CHUNK_SIZE;
     int wz = z + coord.z*CHUNK_SIZE;
 
-    // int shiftx = world.max_block_coord.x-wx;
-    // int shifty = world.max_block_coord.y-wy;
-    // int shiftz = world.max_block_coord.z-wz;
+    int shiftx = world.max_block_coord.x-wx-1;
+    int shifty = world.max_block_coord.y-wy-1;
+    int shiftz = max_height_render-wz-1;
 
-    // int shiftmax = shiftx > shifty ? shiftx : shifty;
-    // shiftmax = shiftmax > shiftz ? shiftmax : shiftz;
+    int shiftmin = shiftx < shifty ? shiftx : shifty;
+    shiftmin = shiftmin < shiftz ? shiftmin : shiftz;
 
-    // wx += shiftmax;
-    // wy += shiftmax;
-    // wz += shiftmax;
+    wx += shiftmin;
+    wy += shiftmin;
+    wz += shiftmin;
 
     refresh_line_visible2(wx, wy, wz);
 }
@@ -540,29 +676,31 @@ void Render_Engine::refresh_block_render_flags(const chunk_coordonate& coord, co
                 set_block_renderflags(c.x, c.y, c.z);
             }
 
-    refresh_line_shadows(x + coord.x*CHUNK_SIZE);
+    coord3D wcoord = {x + coord.x*CHUNK_SIZE, y + coord.y*CHUNK_SIZE, z + coord.z*CHUNK_SIZE};
+    refresh_line_shadows(wcoord, wcoord);
+
+    // refresh_line_shadows(x + coord.x*CHUNK_SIZE, x + coord.x*CHUNK_SIZE, y + coord.y*CHUNK_SIZE, z + coord.z*CHUNK_SIZE);
 }
 
 void Render_Engine::render_frame()
 {
     sprite_counter = 0;
-    SDL_GetMouseState((int*)&mouse.x, (int*)&mouse.y);
 
-    GPU_ClearColor(screen2, {0, 0, 0, 0});
-    GPU_ClearColor(screen3, {0, 0, 0, 0});
-    GPU_ClearColor(screen, {105, 156, 203, 255});
+    GPU_ClearColor(screen2, {105, 156, 203, 255});
+    GPU_ClearColor(screen3, {105, 156, 203, 255});
+    GPU_ClearColor(screen,  {105, 156, 203, 255});
 
     /****************** GENERATING BACKGROUND **************************/
-    // background_shader.activate();
+    background_shader.activate();
 
     // GPU_SetUniformf(1, timems);
     int win_const[4] = {screen->w, screen->h, target.x, target.y};
-    // GPU_SetUniformiv(5, 4, 1, win_const);
+    GPU_SetUniformiv(5, 4, 1, win_const);
 
-    // GPU_SetShaderImage(Textures[BACKGROUND_SUNSET]->ptr, 6, 6); // donne iChannel0
+    // GPU_SetShaderImage(Textures[BACKGROUND_SUNSET]->ptr, 6, 7); // donne iChannel0
     // GPU_Blit(background_image, NULL, screen, 0, 0); // draw une image de taille identiques à lécran
     // GPU_Blit(background_image, NULL, screen3, 0, 0);
-    // background_shader.deactivate();
+    background_shader.deactivate();
     /*******************************************************************/
 
 
@@ -571,38 +709,37 @@ void Render_Engine::render_frame()
 
     timems = Get_time_ms();
     timems -= 1672675701720;
-    float light_direction[3] = {0.75, 0.5, 1};
-    float global_illumination[4] = {1, 1, 1, 0.60};
 
     GPU_SetUniformf(1, timems/7500.0);
     GPU_SetUniformi(2, shader_features);
-    GPU_SetUniformfv(3, 3, 1, light_direction);
+    GPU_SetUniformfv(3, 3, 1, gi_direction);
     GPU_SetUniformfv(4, 4, 1, global_illumination);
     GPU_SetUniformiv(5, 4, 1, win_const);
     GPU_SetUniformf(6, block_onscreen_size);
     GPU_SetUniformi(7, BLOCK_TEXTURE_SIZE);
     GPU_SetUniformi(8, MOSAIC_TEXTURE_SIZE);
-    // GPU_SetUniformi(9, max_height_render);
 
     GPU_SetShaderImage(opaque_world_render, shader.get_location("world"), 3);
+    GPU_SetShaderImage(depth_fbo_image, shader.get_location("depth_fbo"), 1);
     /******************************************************************/
 
     /****************** RENDERING THE WORLD ***************************/
-    GPU_SetDepthWrite(screen, true);
+    // GPU_SetDepthWrite(screen, true);
     render_world();
 
-    world_render_shader.activate();
-    GPU_Blit(final_world_render, NULL, screen3, 0, 0);
-    
     shader.activate();
-    if(window.scale > PANORAMA_SCALE_THRESHOLD)
+    if(window.scale > PANORAMA_SCALE_THRESHOLD && *state == STATE_MAIN)
     {
         if(highlight_mode)
             highlight_block2();
 
         render_highlighted_blocks();    
     }
+
+    world_render_shader.activate();
+    GPU_Blit(final_world_render, NULL, screen3, 0, 0);
     
+    shader.activate();
     render_transparent_world();
     /*******************************************************************/
 
@@ -612,7 +749,8 @@ void Render_Engine::render_frame()
     GPU_Blit(final_world_render, NULL, screen, 0, 0);
     post_process_shader.deactivate();
     /*******************************************************************/
+    // GPU_Blit(depth_fbo_image, NULL, screen, 0, 0);
 
-    GPU_Flip(screen);
+    // GPU_Flip(screen);
     SDL_CondWait(GameEvent->secondary_frame_op_finish, GameEvent->init_cond);
 }
