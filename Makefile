@@ -25,8 +25,8 @@ obj/%.o : src/%.cpp
 
 PHONY : clean
 
-clean : 
+clean-linux: 
 	$(DEL) $(EXEC) obj/*.o
 
-cleanwin : 
+clean: 
 	$(DEL_win) $(EXEC) obj\*.o
