@@ -114,14 +114,12 @@ void Game::generate_debug_world()
             {
                 if(wx < 4 || wy < 4 || z == 0 || wz2 > wx/5 || wz2 > wy/5)
                     world.chunks[x][y][z].blocks[i][j][k].id = BLOCK_SAND;
-                    world.chunks[x][y][z].blocks[i][j][k].id = BLOCK_SAND;
             }
 
             if(wz < 42 && !world.chunks[x][y][z].blocks[i][j][k].id)
                 world.chunks[x][y][z].blocks[i][j][k].id = BLOCK_WATER;
 
             if(wz < 42 && (wx == world.max_block_coord.x-1 || wy == world.max_block_coord.y-1))
-                world.chunks[x][y][z].blocks[i][j][k].id = BLOCK_DEBUG;
                 world.chunks[x][y][z].blocks[i][j][k].id = BLOCK_DEBUG;
             
             if(wx == 150)
@@ -288,7 +286,7 @@ void Game::input()
 void Game::input_mainmenu()
 {
     SDL_Event event;
-    SDL_Keymod km = SDL_GetModState();
+    // SDL_Keymod km = SDL_GetModState();
     SDL_GetMouseState((int*)&mouse.x, (int*)&mouse.y);
 
     // std::cout << "\n" << New_world_name;
@@ -503,31 +501,7 @@ void Game::input_maingame()
                         }
 
                         case SDLK_F7: {
-                            Uint64 start = Get_time_ms();
-
-                            status = world.load_from_file("test.worldsave");
-
-                            if(status == 0) 
-                            {
-                                std::cout << "world load successfully :)\n";
-
-                                RE.world = world;
-                                world.compress_all_chunks();
-
-
-                                GameEvent.drop_all_nfs_event();
-
-                                RE.projection_grid.clear();
-                                RE.projection_grid.save_curr_interval();
-                                // GameEvent.add_nfs_event(NFS_OP_PG_ONSCREEN);
-                                RE.refresh_pg_onscreen();
-                                RE.refresh_pg_block_visible();
-                                GameEvent.add_nfs_event(NFS_OP_ALL_BLOCK_VISIBLE);
-                                GameEvent.add_nfs_event(NFS_OP_ALL_RENDER_FLAG);
-
-                            }
-                            else
-                                std::cout << "world load failed ._. !\n";
+                            load_world(Current_world_name);
                             break;
                         }
 
@@ -572,7 +546,7 @@ void Game::input_maingame()
 
             case SDL_MOUSEMOTION :
                 // std::cout << event.motion.state << '\n';
-                if(event.motion.state == SDL_BUTTON_LMASK)
+                if(event.motion.state == SDL_BUTTON_RMASK)
                 {
                     GameEvent.add_event(GAME_EVENT_CAMERA_MOUVEMENT, (pixel_coord){event.motion.xrel, event.motion.yrel});
                 }
