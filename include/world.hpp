@@ -2,22 +2,32 @@
 #define WORLD_HPP
 
 #include <blocks.hpp>
+#include <vector>
 #include <coords.hpp>
+
+struct line_presence
+{
+    Uint16 oid;
+    Uint16 tid;
+
+    world_coordonate owcoord;
+    world_coordonate twcoord;
+};
 
 struct World
 {
     World();
+    // World(uint16_t, uint16_t, uint16_t);
     ~World();
 
     void init(uint16_t, uint16_t, uint16_t);
-    void free_chunks();
 
     chunk_coordonate max_chunk_coord;
     chunk_coordonate min_chunk_coord;
 
     chunk_coordonate max_block_coord;
 
-    chunk ***chunks;
+    chunk ***chunk;
 
     block* get_block(chunk_coordonate, int, int, int);
     block* get_block_wcoord(int, int, int);
@@ -29,36 +39,36 @@ struct World
     block_coordonate convert_wcoord(int, int, int);
     world_coordonate convert_coord(block_coordonate);
 
+
     void translate_world_view_position(chunk_coordonate&, int&, int&, int&);
     void translate_world_view_wposition(int&, int&, int&);
     void translate_world_view_wpositionf(float&, float&);
-    void invert_wvp(int &x, int &y);
     int world_view_position;
 
     void compress_chunk(int, int, int);
     void compress_all_chunks();
 
-    // get the presence of blocks in the path from the given coord to the sun/moon
-    // the opaque id is given from the first bit
-    // the transparent id is given from the last bit
-    // like everything in the world struct, it automaticly take car of world view position transformation
+    /**** GET PRESENCE ON A PREDEFINED LINE OF THE WORLD ****/
+
+    // F := fast, but risky because no coord checking
+    // P := get position too
+    // O := get only opaque blocks
+    // T := get only transparent blocks
+    // R := reverse, if the jumps are negative
+    // nox/y/z := don't check x/y/z
+
     Uint32 shadow_caster_presence(world_coordonate);
+    /********************************************************/
 
-    // Please consider using STHREAD_OP_SINGLE_CHUNK_POS or STHREAD_OP_SINGLE_BLOCK_VISBLE instead
-    // This one does NOT take care of projection grid refresh
-    // Modify the block at the given world coordonate
-    // Like everything in the world struct, it automaticly take car of world view position transformation
     bool modify_block(world_coordonate, int);
-
-    bool modify_block(world_coordonate, world_coordonate, int);
 
     /* load and save functions
      * returns an int that encode an error code
      * 0 being no errors
      * 
      */
-    int save_to_file(const std::string& filename);
-    int load_from_file(const char* filename);
+    int save_to_file(std::string filename);
+    int load_from_file(std::string filename);
 };
 
 #endif

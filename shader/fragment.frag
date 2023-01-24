@@ -11,6 +11,9 @@
 #define SHADOW_TOP      128
 #define SHADOW_LEFT      64
 #define SHADOW_RIGHT     32
+#define HIDE_PART_LEFT    4
+#define HIDE_PART_RIGHT   2
+#define HIDE_PART_BOTTOM  1
 
 layout (location = 1) uniform float Time;
 layout (location = 2) uniform int features;
@@ -35,17 +38,13 @@ in vec2 MozCoord;
 in flat uint block_info;
 in flat uint render_flags;
 
-layout (location = 0) out vec4 fragColor;
-layout (location = 1) out vec4 depthColor;
+out vec4 fragColor;
 
-uniform sampler2D depth_fbo;
 uniform sampler2D tex;
 uniform sampler2D normal;
 uniform sampler2D ao;
 uniform sampler2D world;
 uniform sampler2D water;
-uniform sampler2D border;
-uniform sampler2D parts;
 
 float Ambiant_Oclusion(vec4 pixel_norm, vec4 pixel_AO)
 {
@@ -55,7 +54,7 @@ float Ambiant_Oclusion(vec4 pixel_norm, vec4 pixel_AO)
     {
         if(
             ((render_flagsl&16) == 16 && texCoord.y < 0.60) || // top
-            ((render_flagsl&8)  ==  8 && texCoord.y > 0.625)    // bottom
+            ((render_flagsl&8)  ==  8 && texCoord.y > 0.60)    // bottom
             
         ){
             PixelTint *= 1-pixel_AO.r*0.5;
@@ -63,15 +62,15 @@ float Ambiant_Oclusion(vec4 pixel_norm, vec4 pixel_AO)
 
         if(
             ((render_flagsl&64) == 64 && texCoord.x < 0.25) || // left
-            ((render_flagsr&64) == 64 && texCoord.x > 0.25)    // right
+            ((render_flagsl&32) == 32 && texCoord.x > 0.25)    // right
         ){
             PixelTint *= 1-pixel_AO.g*0.5;     
         }
         else
         if(
-            ((render_flagst&2) == 2 && texCoord.x < 0.25 && texCoord.y < 0.60) || // corner top left
+            ((render_flagsl&4) == 4 && texCoord.x < 0.25 && texCoord.y < 0.60) || // corner top left
             ((render_flagsl&1) == 1 && texCoord.x < 0.25 && texCoord.y > 0.60) || // corner bottom left
-            ((render_flagsr&1) == 1 && (render_flagsl&8) == 0 && texCoord.x > 0.25 && texCoord.y > 0.60)    // corner bottom right
+            ((render_flagsl&2) == 2 && texCoord.x > 0.25 && texCoord.y > 0.60)    // corner bottom right
         )
         {
             PixelTint *= 1-pixel_AO.r*pixel_AO.g*0.54;
@@ -81,7 +80,7 @@ float Ambiant_Oclusion(vec4 pixel_norm, vec4 pixel_AO)
     {
         if(
             ((render_flagsr&16) == 16 && texCoord.y < 0.60) || // top
-            ((render_flagsr&8)  ==  8 && texCoord.y > 0.625)    // bottom
+            ((render_flagsr&8)  ==  8 && texCoord.y > 0.60)    // bottom
             
         ){
             PixelTint *= 1-pixel_AO.r*0.5;
@@ -95,9 +94,9 @@ float Ambiant_Oclusion(vec4 pixel_norm, vec4 pixel_AO)
         }
         else
         if(
-            ((render_flagst&1) == 1 && texCoord.x > 0.75 && texCoord.y < 0.60) || // corner top right
+            ((render_flagsr&4) == 4 && texCoord.x > 0.75 && texCoord.y < 0.60) || // corner top right
             ((render_flagsr&2) == 2 && texCoord.x > 0.75 && texCoord.y > 0.60) || // corner bottom right
-            ((render_flagsr&1) == 1 && (render_flagsr&8) == 0 && texCoord.x < 0.75 && texCoord.y > 0.60)    // corner bottom left
+            ((render_flagsr&1) == 1 && texCoord.x < 0.75 && texCoord.y > 0.60)    // corner bottom left
         )
         {
             PixelTint *= 1-pixel_AO.r*pixel_AO.g*0.54;
@@ -122,7 +121,7 @@ float Ambiant_Oclusion(vec4 pixel_norm, vec4 pixel_AO)
         if(
             ((render_flagst&4) == 4 && texCoord.y < 0.15) || // corner top 
             ((render_flagst&2) == 2 && texCoord.x < 0.25) || // corner left
-            ((render_flagst&1) == 1 && (render_flagst&32) == 0 && texCoord.x > 0.75)    // corner right
+            ((render_flagst&1) == 1 && texCoord.x > 0.75)    // corner right
         )
         {
             PixelTint *= 1-pixel_AO.r*pixel_AO.g*0.54;
@@ -134,19 +133,6 @@ float Ambiant_Oclusion(vec4 pixel_norm, vec4 pixel_AO)
 
 float Shadows(vec4 pixel_norm)
 {
-    // uint shadow_id = shadows_flags&(128+64+32);
-
-    // if(shadow_id != 0)
-    // {
-    //     return 0.25;
-    // }
-
-    // if(id >= 240)
-    // {
-    //     if((shadows_flags&SHADOW_RIGHT) != 0 || (shadows_flags&SHADOW_LEFT) != 0 || (shadows_flags&SHADOW_TOP) != 0)
-    //         return 0.5;
-    // }
-
     if(
         pixel_norm.r == 1 && (shadows_flags&SHADOW_RIGHT) != 0 ||
         pixel_norm.g == 1 && (shadows_flags&SHADOW_LEFT)  != 0 ||
@@ -184,9 +170,9 @@ vec3 hsv2rgb(vec3 c)
     return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
 }
 
-vec4 u_WaveStrengthX=vec4(4.15,4.66,0.0016,0.0015)*log(sprite_size)/7.0;
-vec4 u_WaveStrengthY=vec4(2.54,6.33,0.00102,0.0025)*log(sprite_size)/7.0;
-float iTime = 0.5;
+const vec4 u_WaveStrengthX=vec4(4.15,4.66,0.0016,0.0015)*log(sprite_size)/7.0;
+const vec4 u_WaveStrengthY=vec4(2.54,6.33,0.00102,0.0025)*log(sprite_size)/7.0;
+const float iTime = 0.5;
 vec2 dist(vec2 uv)
 { 
     float uTime = Time;
@@ -200,96 +186,27 @@ vec2 dist(vec2 uv)
     return uv;
 }
 
-void handle_water(vec4 pixel, vec4 pixel_norm)
+void handle_water(vec4 pixel)
 {
-    // determine depth height
-    float water_depth = float(shadows_flags%32)/16.0;;
-    vec4 pixel_parts = texture(parts, texCoord);
-    float water_depth2 = 200;
+    float val = (render_flagsl%32)/16.0;
 
-    if(pixel_parts.r == 1)
-    {
-        water_depth2 = float(render_flagsr%32)/16.0;
-
-        if(water_depth2 < water_depth)
-        {
-            float water_depth3 = float(render_flagst%32)/16.0;
-
-            if(water_depth2 < water_depth3)
-            {
-                // pixel.g = 1;
-            }
-            else
-            {
-                water_depth2 = 200;
-            }
-        }
-    }
-    if(pixel_parts.g == 1)
-    {
-        water_depth2 = float(render_flagsl%32)/16.0;
-        
-        if(water_depth2 < water_depth)
-        {
-            float water_depth3 = float(render_flagst%32)/16.0;
-
-            if(water_depth2 < water_depth3)
-            {
-                // pixel.r = 1;
-            }
-            else
-            {
-                // pixel.b = 1;
-                water_depth2 = 200;
-            }
-        }
-    }
-    if(pixel_parts.b == 1)
-    {
-        water_depth2 = float(render_flagst%32)/16.0;
-
-        float water_depth3 = 200;
-        
-        if(pixel_norm.r == 1)
-            water_depth3 = float(render_flagsl%32)/16.0;
-        else if(pixel_norm.g == 1)
-            water_depth3 = float(render_flagsr%32)/16.0;
-
-        if(water_depth3 < water_depth2)
-            water_depth2 = water_depth3; 
-
-    }
-    
-    if(water_depth2 == 0) water_depth2 = 200;
-    // if(water_depth == 0) water_depth = 200;
-
-    if(water_depth2 < water_depth)
-        water_depth = water_depth2; 
-
-    // fragColor = pixel_norm;
-    // fragColor.rgb = vec3(float(block_height)/512);;
-    // fragColor.a = 1;
-    // return;
-
-    // if(water_depth > 1)
-        // pixel.g = pixel.g + ((2-water_depth)/16.0);
-    
-    pixel.g = pixel.g + ((2-water_depth)/32.0);
+    // if(val > 1)
+        pixel.g = pixel.g + ((2-val)/16.0);
 
     /// water color desaturation
-    float desaturation_water_depthue = ((1-water_depth)/6.0); // version colorée
-    //float desaturation_water_depthue = ((2-water_depth)/4.0); // version réaliste
+    float desaturation_value = ((1-val)/6.0); // version colorée
+    //float desaturation_value = ((2-val)/4.0); // version réaliste
     vec3 pixel_hsv = rgb2hsv(pixel.rgb);
-    pixel_hsv.y = pixel_hsv.y-desaturation_water_depthue;
+    pixel_hsv.y = pixel_hsv.y-desaturation_value;
     vec3 new_pixel = hsv2rgb(pixel_hsv.rgb);
     pixel.rgb = new_pixel.rgb;
     //////////////////////////////////////
 
-    pixel.a += (water_depth/5.0); // := water opacity
+    pixel.a += (val/5.0); // := water opacity
     if(pixel.a > 1)
         pixel.a = 1;  
 
-    vec2 screen_pos = vec2(gl_FragCoord.x/win_const.x, (gl_FragCoord.y/win_const.y));
+    vec2 screen_pos = vec2(gl_FragCoord.x/1920, (gl_FragCoord.y/1080));
     screen_pos = dist(screen_pos);
     vec4 pixel_world = texture(world, screen_pos);
 
@@ -299,11 +216,11 @@ void handle_water(vec4 pixel, vec4 pixel_norm)
 
     // pixel_world.r = (pixel.r + pixel_world.r)/2;
 
-    float color_shift_water_depthue = pixel_world.g*(2-water_depth)*(2-water_depth)/16.0;
-    pixel.r = (pixel.r*pixel.a + pixel_world.r*color_shift_water_depthue)/(pixel.a+color_shift_water_depthue);
-    // pixel.r = (pixel.r + pixel_world.r*color_shift_water_depthue)/(1+color_shift_water_depthue);
+    float color_shift_value = pixel_world.g*(2-val)*(2-val)/16.0;
+    pixel.r = (pixel.r*pixel.a + pixel_world.r*color_shift_value)/(pixel.a+color_shift_value);
+    // pixel.r = (pixel.r + pixel_world.r*color_shift_value)/(1+color_shift_value);
 
-    // pixel_world.r = pixel.r*color_shift_water_depthue + pixel_world.r*(4-color_shift_water_depthue);
+    // pixel_world.r = pixel.r*color_shift_value + pixel_world.r*(4-color_shift_value);
 
     pixel.rgb = hsv2rgb(pixel.rgb);
     pixel_world.rgb = hsv2rgb(pixel_world.rgb);
@@ -313,159 +230,9 @@ void handle_water(vec4 pixel, vec4 pixel_norm)
     fragColor.a = 1;
 }
 
-// https://thebookofshaders.com/11/
-// 2D Random
-float random (in vec2 st) {
-    return fract(sin(dot(st.xy,
-                         vec2(12.9898,78.233)))
-                 * 43758.5453123);
-}
-
-// 2D Noise based on Morgan McGuire @morgan3d
-// https://www.shadertoy.com/view/4dS3Wd
-float noise (in vec2 st) {
-    vec2 i = floor(st);
-    vec2 f = fract(st);
-
-    // Four corners in 2D of a tile
-    float a = random(i);
-    float b = random(i + vec2(1.0, 0.0));
-    float c = random(i + vec2(0.0, 1.0));
-    float d = random(i + vec2(1.0, 1.0));
-
-    // Smooth Interpolation
-
-    // Cubic Hermine Curve.  Same as SmoothStep()
-    vec2 u = f*f*(3.0-2.0*f);
-    // u = smoothstep(0.,1.,f);
-
-    // Mix 4 coorners percentages
-    return mix(a, b, u.x) +
-            (c - a)* u.y * (1.0 - u.x) +
-            (d - b) * u.x * u.y;
-}
-
-const float Persistance = 1;
-const float Roughness = 1;
-
-float diffraction(vec2 world_pos) {
-
-    float diffraction_index = 0;
-    float frequency = 0.5;
-    float factor = 0.8;
-
-    for (int i = 0; i < 4; i++) {
-        diffraction_index += noise(world_pos * frequency / (sprite_size / 2048) * i * 0.72354) * factor;
-        factor *= Persistance;
-        frequency *= Roughness;
-    }
-
-    // diffraction_index = ((noise((world_pos * 0.1) / (sprite_size / 2048)) + noise((world_pos * 1) / (sprite_size / 2048)) *0.2 )) * 0.01; 
-    return (1 - diffraction_index) / 20;
-}
-
-void handle_glass(vec4 pixel) {
-    vec2 screen_pos = vec2(gl_FragCoord.x/win_const.x, gl_FragCoord.y/win_const.y);
-    vec2 world_pos = vec2(
-        screen_pos.x - (win_const.z/1920.0), 
-        screen_pos.y - (win_const.w/1080.0)
-        );
-    vec2 diffracted_pos = screen_pos + vec2(diffraction(world_pos)) * (sprite_size / 2048) ;
-    vec4 pixel_world = texture(world, diffracted_pos);
-
-
-    // fragColor.rgb = vec3(diffraction(world_pos));
-    
-    // fragColor.rgb = pixel_world.rgb;
-
-    fragColor.rgb = pixel.rgb*pixel.a + (pixel_world.rgb * (1-pixel.a));
-
-    fragColor.a = 1;
-}
-
 void handle_depth()
 {
-    gl_FragDepth = 1-(float(block_height)+1.0)/8192;
-
-    depthColor = vec4(float(block_height)/512);
-    depthColor.a = 1;
-}
-
-vec4 handle_border(vec4 pixel_norm, vec4 PixelTint)
-{
-    vec4 pixel_border = texture(border, texCoord);
-
-    vec4 border_color = vec4(1.5, 1.5, 1.25, 0.0);
-    // vec4 border_color = vec4(0.5, 0.5, 0.25, 0.0);
-
-    if(pixel_border.a > 0.99)
-    {
-        if(id >= 240)
-        {
-            return PixelTint;
-            // return vec4(0.5, 0.5, 0.25, 1.0);
-        }
-
-        if(pixel_border.g == 1)
-        {
-            if(render_flagsl >= 128 && render_flagsr >= 128 && texCoord.x > 0.25 && texCoord.x < 0.75)
-            {
-                return border_color;
-            }
-        }
-
-        if(pixel_border.r > 0.8)
-        {
-            if(render_flagsl >= 128 && render_flagst >= 128 && texCoord.y < 0.65)
-            {
-                return border_color;
-            }
-        }
-
-        if(pixel_border.r < 1.0 && pixel_border.r > 0.0)
-        {
-            if(render_flagsr >= 128 && render_flagst >= 128 && texCoord.y < 0.65)
-            {
-                return border_color;
-            }
-        }
-
-
-        if((render_flagsl&2) == 0)
-        {
-            if(pixel_border.b > 0.5)
-            {
-                return border_color;
-            }
-
-            if(pixel_border.g == 1 && texCoord.x < 0.25)
-            {
-                return border_color;
-            }
-        }
-
-        if((render_flagsl&4) == 0)
-        {
-            if(pixel_border.b < 1 && pixel_border.b > 0)
-            {
-                return border_color;
-            }
-
-            if(pixel_border.g == 1 && texCoord.x > 0.75)
-            {
-                return border_color;
-            }
-        }
-
-        if((render_flagsl&32) == 0)
-        {
-            if(pixel_border.r == 1 && texCoord.y > 0.65)
-                return border_color;
-        }
-
-    }
-
-    return PixelTint;
+    gl_FragDepth = 1-(block_height*1.0+1.0)/atlas_size;
 }
 
 void main (void)
@@ -513,29 +280,10 @@ void main (void)
     }
     ////////////////////////////////////////////////////////////////
 
-    ///////////////////////// BASIC BORDER //////////////////////////
-    if((features & SFEATURE_BLOCK_BORDERS) != 0)
-    {
-        PixelTint *= handle_border(pixel_norm, vec4(1, 1, 1, 1));
-    }
-    /////////////////////////////////////////////////////////////////
-
     /////////////////////////// SHADOWS ////////////////////////////
     if((features & SFEATURE_SHADOWS) != 0)
     {
         PixelTint *= Shadows(pixel_norm);
-    }
-    /////////////////////////////////////////////////////////////////
-
-    ///////////////////// GLOBAL ILLUMINATION  //////////////////////
-    if((features & SFEATURE_GLOBAL_ILLUMINATION) == SFEATURE_GLOBAL_ILLUMINATION)
-    {
-        float GI = dot(light_direction, pixel_norm.rgb);
-
-        if(id >= 240 && GI < 0.75)
-            GI = 0.75;
-
-        PixelTint *= GI;
     }
     /////////////////////////////////////////////////////////////////
 
@@ -544,13 +292,9 @@ void main (void)
     {
         fragColor = pixel;
 
-        if(id == 240) // water
+        if(id == 240)
         {
-            handle_water(pixel, pixel_norm);
-        }
-        else if (id > 240) // glass
-        {
-            handle_glass(pixel);
+            handle_water(pixel);
         }
 
         // PixelTint.rgb = vec3(0.5);
@@ -566,7 +310,21 @@ void main (void)
         PixelTint *= Ambiant_Oclusion(pixel_norm, pixel_AO);
     }
     /////////////////////////////////////////////////////////////////
+
+    ///////////////////////// BASIC BORDER //////////////////////////
+
+    /////////////////////////////////////////////////////////////////
     
+    ///////////////////// GLOBAL ILLUMINATION  //////////////////////
+    if((features & SFEATURE_GLOBAL_ILLUMINATION) == SFEATURE_GLOBAL_ILLUMINATION)
+    {
+        PixelTint *= dot(light_direction, vec3(pixel_norm.r, pixel_norm.g, pixel_norm.b));
+    }
+    /////////////////////////////////////////////////////////////////
+
+    // float Vdepth = block_height*30.0/atlas_size;
+    // pixel = vec4(vec3(Vdepth, 1.0);
+    // pixel = vec4(shadows_flags/256.0, Vdepth, 0.0, 1.0);
 
     PixelTint.a = 1;
     fragColor = pixel * PixelTint;

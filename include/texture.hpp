@@ -5,6 +5,7 @@
 #include <SDL2/SDL_gpu.h>
 
 #include <game.hpp>
+#include <constants.hpp>
 #include <coords.hpp>
 
 struct Texture
@@ -14,14 +15,8 @@ struct Texture
     
     uint32_t id;
 
-    Texture(uint32_t);
-    Texture();
-    
-    void init_from_file(const char*);
-
+    Texture(uint32_t, GPU_Renderer*);
     ~Texture();
-
-    void set_atlas_srcrect(int nbcol, int nbline, int id);
 };
 
 #endif
