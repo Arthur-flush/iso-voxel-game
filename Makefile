@@ -6,13 +6,14 @@ INCLUDE = -Iinclude
 EXEC = iso.exe
 DEL_win = del /Q /F
 DEL = rm -f # linux
+
 default: $(EXEC)
 
 run :
 	$(EXEC)
 
 $(EXEC): $(OBJ)
-    $(CC) $(OBJ) -o $(EXEC) $(SDLFLAGS)
+	$(CC) $(OBJ) -o $(EXEC) $(SDLFLAGS)
 
 install : $(EXEC)
 
