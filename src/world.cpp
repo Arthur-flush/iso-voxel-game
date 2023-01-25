@@ -1,4 +1,4 @@
-#include <game.hpp>
+#include <world.hpp>
 
 World::World(){chunks = NULL;};
 
@@ -437,10 +437,10 @@ bool World::modify_block(world_coordonate wcoord, int id)
     translate_world_view_wposition(wcoord.x, wcoord.y, wcoord.z);
 
     block_coordonate coord = convert_wcoord(wcoord.x, wcoord.y, wcoord.z);
-
-    if(coord.x < min_chunk_coord.x || coord.x > max_chunk_coord.x ||
-       coord.y < min_chunk_coord.y || coord.y > max_chunk_coord.y ||
-       coord.z < min_chunk_coord.z || coord.z > max_chunk_coord.z)
+    
+    if (coord.chunk.x < min_chunk_coord.x || coord.chunk.x > max_chunk_coord.x ||
+        coord.chunk.y < min_chunk_coord.y || coord.chunk.y > max_chunk_coord.y ||
+        coord.chunk.z < min_chunk_coord.z || coord.chunk.z > max_chunk_coord.z)
         return false;
     
     chunks[coord.chunk.x][coord.chunk.y][coord.chunk.z].blocks[coord.x][coord.y][coord.z].id = id;

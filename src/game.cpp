@@ -12,7 +12,7 @@ std::list<int>::iterator circularNext(std::list<int> &l, std::list<int>::iterato
 
 pixel_coord mouse = {0};
 
-Game::Game(GPU_Target* _screen) : RE(world), GameEvent(RE)
+Game::Game(GPU_Target* _screen) : RE(world), GameEvent(RE), physics_engine()
 {
     state = STATE_QUIT;
     init(_screen);
@@ -595,7 +595,9 @@ void Game::input_maingame()
                     else if(RE.highlight_mode == HIGHLIGHT_MOD_DELETE)
                     {
                         GameEvent.add_event(GAME_EVENT_SINGLE_BLOCK_MOD, (coord3D)RE.highlight_wcoord, BLOCK_EMPTY);
-                    }
+                    
+                    else if(RE.highlight_mode == HIGHLIGHT_PLACE || RE.highlight_mode == HIGHLIGHT_PLACE_ALT)
+                        GameEvent.add_event(GAME_EVENT_SINGLE_BLOCK_MOD, (coord3D)RE.highlight_wcoord, Current_block);
                 }
                 break;
 

@@ -2,6 +2,7 @@
 #define CONSTANTS_HPP
 
 #include <iostream>
+#include <SDL2/SDL.h>
 
 #define MAIN_GAME_VERSION "0.10.2"
 
@@ -106,6 +107,7 @@ tested floats exemple :
 #define BLOCK_GLASS_CYAN            247
 #define BLOCK_GLASS_MAGENTA         248
 
-
+//////// PHYSICS EVENT IDs ////////
+#define PHYSICS_EVENT_WATER 0
 
 #endif
