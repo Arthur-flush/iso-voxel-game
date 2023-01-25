@@ -13,6 +13,8 @@
 #include <coords.hpp>
 #include <constants.hpp>
 
+extern pixel_coord mouse;
+
 Uint64 Get_time_ms();
 
 class Multithreaded_Event_Handler;

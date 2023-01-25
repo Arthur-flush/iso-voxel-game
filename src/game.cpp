@@ -185,7 +185,7 @@ void Game::init(GPU_Target* _screen)
     GameEvent.add_event(GAME_EVENT_CAMERA_MOUVEMENT, (pixel_coord){RE.window.size.x/2, RE.window.size.y/2});
 }
 
-int Game::load_world(std::string filename, bool new_size, bool recenter_camera)
+int Game::load_world(std::string filename, bool new_size, bool recenter_camera, bool verbose)
 {
     Uint64 start = Get_time_ms();
     Uint64 end_load;
@@ -226,10 +226,12 @@ int Game::load_world(std::string filename, bool new_size, bool recenter_camera)
 
         end_refresh = Get_time_ms();
 
-        std::cout << "Loaded " << world.max_chunk_coord.x << "x" << world.max_chunk_coord.y << "x" << world.max_chunk_coord.z << " world successfully" << std::endl;
-        std::cout << "Load time: " << end_load-start << "ms" << std::endl;
-        std::cout << "Refresh time: " << end_refresh-end_load << "ms" << std::endl;
-        std::cout << "Total time: " << end_refresh-start << "ms" << std::endl;
+        if (verbose) {
+            std::cout << "Loaded " << world.max_chunk_coord.x << "x" << world.max_chunk_coord.y << "x" << world.max_chunk_coord.z << " world successfully" << std::endl;
+            std::cout << "Load time: " << end_load-start << "ms" << std::endl;
+            std::cout << "Refresh time: " << end_refresh-end_load << "ms" << std::endl;
+            std::cout << "Total time: " << end_refresh-start << "ms" << std::endl;
+        }
 
     }
     else
@@ -501,7 +503,7 @@ void Game::input_maingame()
                         }
 
                         case SDLK_F7: {
-                            load_world(Current_world_name);
+                            load_world(Current_world_name, true, false, true);
                             break;
                         }
 
@@ -591,13 +593,13 @@ void Game::input_maingame()
                     else if(RE.highlight_mode >= HIGHLIGHT_MOD_REPLACE)
                     {
                         GameEvent.add_event(GAME_EVENT_SINGLE_BLOCK_MOD, (coord3D)RE.highlight_wcoord, *Current_block);
+                        PhysicsEventWater *new_event = new PhysicsEventWater(&world, &physics_engine, &GameEvent, world.convert_wcoord(RE.highlight_wcoord.x, RE.highlight_wcoord.y, RE.highlight_wcoord.z));
+                        physics_engine.add_event(new_event);
                     }
                     else if(RE.highlight_mode == HIGHLIGHT_MOD_DELETE)
                     {
                         GameEvent.add_event(GAME_EVENT_SINGLE_BLOCK_MOD, (coord3D)RE.highlight_wcoord, BLOCK_EMPTY);
-                    
-                    else if(RE.highlight_mode == HIGHLIGHT_PLACE || RE.highlight_mode == HIGHLIGHT_PLACE_ALT)
-                        GameEvent.add_event(GAME_EVENT_SINGLE_BLOCK_MOD, (coord3D)RE.highlight_wcoord, Current_block);
+                    }
                 }
                 break;
 
