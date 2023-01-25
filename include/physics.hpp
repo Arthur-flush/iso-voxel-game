@@ -1,8 +1,8 @@
 #ifndef PHYSICS_HPP
 #define PHYSICS_HPP
 
-#include "Multithreaded_Event_Handler.hpp"
-#include "world.hpp"
+#include <multithreaded_event_handler.hpp>
+#include <world.hpp>
 #include <deque>
 #include <mutex>
 
@@ -52,9 +52,5 @@ public:
     block_coordonate get_coord() const { return coord; }
     friend class PhysicsEngine; // temporary for debugging
 };
-
-// debug
-bool less_than(PhysicsEventWater a, PhysicsEvent* b);
-
 
 #endif

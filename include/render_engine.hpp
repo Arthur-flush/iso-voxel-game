@@ -13,11 +13,11 @@
 #include <coords.hpp>
 #include <constants.hpp>
 
+extern pixel_coord mouse;
+
 Uint64 Get_time_ms();
 
 class Multithreaded_Event_Handler;
-
-int Thread_refresh_pg_block_visible(void*);
 
 struct Window_Variables
 {
@@ -31,6 +31,8 @@ struct Window_Variables
 struct Render_Engine
 {   
     Render_Engine(World& _world);
+
+    Uint16 const *state;
 
     SDL_Thread *SecondaryThread;
     Multithreaded_Event_Handler *GameEvent;
@@ -48,17 +50,21 @@ struct Render_Engine
     GPU_Target *background;
     GPU_Image *background_image;
 
+    GPU_Target *depth_fbo;
+    GPU_Image  *depth_fbo_image;
+
     World &world;
 
     pixel_coord target;
-    pixel_coord mouse;
 
-    block_coordonate highlight_coord;
+    block_coordonate highlight_coord; // old
     world_coordonate highlight_wcoord;
-    
+    world_coordonate highlight_wcoord2;
+
     chunk_coordonate max_render_coord;
 
     int highlight_mode;
+    int highlight_type;
 
     bool grid_enable;
 
@@ -67,6 +73,8 @@ struct Render_Engine
     Shader post_process_shader;
     Shader background_shader;
 
+    float global_illumination[4];
+    float gi_direction[3];
 
     std::shared_ptr<Texture> Textures[TEXTURE_MAX_NUMBER] = {NULL};
 
@@ -128,7 +136,8 @@ struct Render_Engine
     void set_shadow_context(SDL_Color&, int, int, int);
     void set_block_shadow_context2(int, int, int);
 
-    void refresh_line_shadows(int);
+    void refresh_line_shadows(int, int, int, int);
+    void refresh_line_shadows(coord3D beg, coord3D end);
     /***************************************/
 
     void highlight_block2();
@@ -143,6 +152,10 @@ struct Render_Engine
     // give it +1 or -1 depending of the direction of the rotation
     // does not refresh the projection grid!
     void rotate_camera(int);
+    void center_camera();
+
+    void set_global_illumination_direction();
+    void set_global_illumination(float[4]);
 };
 
 

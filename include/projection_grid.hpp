@@ -2,20 +2,24 @@
 #define PROJECTION_GRID_HPP
 
 #include <SDL2/SDL.h>
-
+#include <coords.hpp>
 #include <blocks.hpp>
 #include <coords.hpp>
 
 #define IDENDICAL_LINE_MAX 41 //41
 
+void set_in_interval(int& x, const int min, const int max);
+
 struct screen_block
 {
     block transparent_block;
-    block block_screen;
+    block opaque_block;
 
     Uint16 height;
     Uint16 x;
     Uint16 y;
+    Uint16 x_transparent;
+    Uint16 y_transparent;
     Uint16 height_transparent;
 
     bool is_on_screen;

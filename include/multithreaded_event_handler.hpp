@@ -17,9 +17,13 @@
 // automaticly check for any error or bad resquest
 // automaticly refresh the projection grid (shadows, visible blocks and identical_lines)
 #define GAME_EVENT_SINGLE_BLOCK_MOD          5
-// replace all of the world's block beetween the 2 given coord3D with the given block_id
-// It is not implemented yet but will have similare feature as GAME_EVENT_SINGLE_BLOCK_MOD
-#define GAME_EVENT_MULTIPLE_BLOCKS_MOD       6
+
+// replace the world's block at the given block_coordonate with the given block_id
+// does NOT translate the coords to world view position
+// does NOT check for any error or bad resquest
+// automaticly refresh world's display & chunk compression
+// ==> use it when you have to modify a potentialy large quantity of block, but not too frequently
+#define GAME_EVENT_SINGLE_BLOCK_MOD_ALT      6
 #define GAME_EVENT_INIT_WORLD_RENDER_FLAGS   7
 
 #define STHREAD_OP_PG_BLOCK_VISIBLE     0b00000010
@@ -35,13 +39,14 @@
 #define NFS_OP_PG_ONSCREEN              3
 #define NFS_OP_PG_MHR                   4
 
-// Function that will be runed on the Secondary thread
+
+// Function that will be run on the Secondary thread
 // It is frame sensitive, so the game will wait for this 
 // function to signal Multithreaded_Event_Handler::new_frame_to_render 
 // before passing to the next frame
 int SecondaryThread_operations(void *);
 
-// Function that will be runed on the Non Frame Sensitive Operations thread
+// Function that will be run on the Non Frame Sensitive Operations thread
 int NFS_operations(void *);
 
 struct game_event_aditional_data
@@ -98,8 +103,10 @@ class Multithreaded_Event_Handler
         void add_event(const int, const pixel_coord);
         void add_event(const int, const coord3D);
         void add_event(const int, const block_coordonate);
+        void add_event(const int, const block_coordonate, Uint16);
         void add_event(const int, const world_coordonate, Uint16);
         void add_event(const int, const block_coordonate, const block_coordonate);
+        
         
         // Handle all gamevent previously pushed
         // Prepare all secondary thread operation and send them to the corresponding thread
@@ -109,14 +116,18 @@ class Multithreaded_Event_Handler
 
         /********* NFS OP ************/
 
+
         SDL_Thread *NFS_Thread;
         SDL_cond *new_nfs_event;
+
+        bool is_NFS_reading_to_wpg;
 
         // Queue a new Non Frame Sensitive event for the corresponding thread
         void add_nfs_event(const int nfs_event_id);
 
         // Drop all Non Frame Sensitive operation from the corresponding thread
         void drop_all_nfs_event();
+
 
         /****************************/
 };

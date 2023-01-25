@@ -236,6 +236,34 @@ void World::translate_world_view_wposition(int& x, int& y, int& z)
     }
 }
 
+void World::invert_wvp(int &x, int &y)
+{
+    if(world_view_position == 1)
+    {
+        y = max_block_coord.y-1-y;
+
+        int ytmp = y;
+
+        y = x;
+        x = ytmp;
+
+    }
+    else if(world_view_position == 3)
+    {
+        x = max_block_coord.x-1-x;
+
+        int ytmp = y;
+
+        y = x;
+        x = ytmp;
+    }
+    else if(world_view_position == 2)
+    {
+        y = max_block_coord.y-1-y;
+        x = max_block_coord.x-1-x;
+    }   
+}
+
 void World::translate_world_view_wpositionf(float& x, float& y)
 {
     if(world_view_position == 1)
@@ -401,7 +429,7 @@ Uint32 World::shadow_caster_presence(world_coordonate start)
 
     }
 
-    return 0;
+    return tid<<8;
 }
 
 bool World::modify_block(world_coordonate wcoord, int id)
@@ -527,8 +555,8 @@ int get_file_size(FILE* f) {
     return size;
 }
 
-int World::load_from_file(const char*& filename) {
-    std::cout << "Loading world from file " << filename << "\n";
+int World::load_from_file(const char* filename) {
+    // std::cout << "Loading world from file " << filename << "\n";
     FILE* file = fopen(filename, "rb");
     if (!file) {
         std::cout << "Error opening file " << filename << "\n";
