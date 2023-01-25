@@ -32,6 +32,7 @@ struct World
     void translate_world_view_position(chunk_coordonate&, int&, int&, int&);
     void translate_world_view_wposition(int&, int&, int&);
     void translate_world_view_wpositionf(float&, float&);
+    void invert_wvp(int &x, int &y);
     int world_view_position;
 
     void compress_chunk(int, int, int);
@@ -49,13 +50,15 @@ struct World
     // Like everything in the world struct, it automaticly take car of world view position transformation
     bool modify_block(world_coordonate, int);
 
+    bool modify_block(world_coordonate, world_coordonate, int);
+
     /* load and save functions
      * returns an int that encode an error code
      * 0 being no errors
      * 
      */
     int save_to_file(const std::string& filename);
-    int load_from_file(const char*& filename);
+    int load_from_file(const char* filename);
 };
 
 #endif

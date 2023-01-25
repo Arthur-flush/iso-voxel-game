@@ -2,6 +2,7 @@
 #define BLOCKS_HPP
 
 #include <constants.hpp>
+
 #include <SDL2/SDL.h>
 
 struct block

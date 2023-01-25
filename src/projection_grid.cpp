@@ -35,7 +35,7 @@ void Projection_grid::init_pos(const int sizex, const int sizey, const int sizez
 {
     if(pos[0] || pos[1] || pos[2])
     {
-        std::cerr << "\nRENDER FATAL ERROR : Can't initialize non empty projection grid.";
+        std::cerr << "\nRENDER FATAL ERROR : Can't initialize non empty projection grid.\n";
         return;
     }
     
@@ -58,11 +58,11 @@ void Projection_grid::init_pos(const int sizex, const int sizey, const int sizez
 
             for(int j = 0; j < size[face][1]; j++)
             {
-                pos[face][i][j].height = 0; // debug
+                pos[face][i][j].height = 0;
                 pos[face][i][j].is_on_screen = true;
                 pos[face][i][j].render_flags = {0, 0, 0, 0};
                 pos[face][i][j].render_flags_transparent = {0, 0, 0, 0};
-                pos[face][i][j].block_screen.id = BLOCK_EMPTY;
+                pos[face][i][j].opaque_block.id = BLOCK_EMPTY;
                 pos[face][i][j].transparent_block.id = BLOCK_EMPTY;
                 pos[face][i][j].identical_line_counter = 0;
                 pos[face][i][j].identical_line_counter_transparent = 0;
@@ -239,7 +239,7 @@ void Projection_grid::refresh_all_identical_line()
         identical_line_counter_transparent = 0;
 
         rf2 = &pos[face][i][size[face][1]-2].render_flags;
-        id2 = pos[face][i][size[face][1]-2].block_screen.id;
+        id2 = pos[face][i][size[face][1]-2].opaque_block.id;
         h2 = pos[face][i][size[face][1]-2].height;
 
         trf2 = &pos[face][i][size[face][1]-2].render_flags_transparent;
@@ -251,7 +251,7 @@ void Projection_grid::refresh_all_identical_line()
             sb = &pos[face][i][j];
 
             rf = &sb->render_flags;
-            id = sb->block_screen.id;
+            id = sb->opaque_block.id;
             h = sb->height;
 
             if(identical_line_counter < IDENDICAL_LINE_MAX && 
@@ -300,13 +300,14 @@ void Projection_grid::refresh_all_identical_line()
     for(int i = 0; i < size[face][1]; i++)
     {
         identical_line_counter = 0;
+        identical_line_counter_transparent = 0;
 
         rf2 = &pos[face][size[face][0]-1][i].render_flags;
-        id2 = pos[face][size[face][0]-1][i].block_screen.id;
+        id2 = pos[face][size[face][0]-1][i].opaque_block.id;
         h2 = pos[face][size[face][0]-1][i].height;
 
-        trf2 = &pos[face][size[face][0]-2][i].render_flags_transparent;
-        tid2 = pos[face][size[face][0]-2][i].transparent_block.id;  
+        trf2 = &pos[face][size[face][0]-1][i].render_flags_transparent;
+        tid2 = pos[face][size[face][0]-1][i].transparent_block.id;  
         th2 = pos[face][size[face][0]-1][i].height_transparent;
 
         for(int j = size[face][0]-2; j >= 0; j--)
@@ -314,7 +315,7 @@ void Projection_grid::refresh_all_identical_line()
             sb = &pos[face][j][i];
 
             rf = &sb->render_flags;
-            id = sb->block_screen.id;
+            id = sb->opaque_block.id;
             h = sb->height;
 
             if(identical_line_counter < IDENDICAL_LINE_MAX && 
@@ -361,13 +362,14 @@ void Projection_grid::refresh_all_identical_line()
     for(int i = 0; i < size[face][1]; i++)
     {
         identical_line_counter = 0;
+        identical_line_counter_transparent = 0;
 
         rf2 = &pos[face][size[face][0]-1][i].render_flags;
-        id2 = pos[face][size[face][0]-1][i].block_screen.id;
+        id2 = pos[face][size[face][0]-1][i].opaque_block.id;
         h2 = pos[face][size[face][0]-1][i].height;
 
-        trf2 = &pos[face][size[face][0]-2][i].render_flags_transparent;
-        tid2 = pos[face][size[face][0]-2][i].transparent_block.id;  
+        trf2 = &pos[face][size[face][0]-1][i].render_flags_transparent;
+        tid2 = pos[face][size[face][0]-1][i].transparent_block.id;  
         th2 = pos[face][size[face][0]-1][i].height_transparent;
 
         for(int j = size[face][0]-2; j >= 0; j--)
@@ -375,7 +377,7 @@ void Projection_grid::refresh_all_identical_line()
             sb = &pos[face][j][i];
 
             rf = &sb->render_flags;
-            id = sb->block_screen.id;
+            id = sb->opaque_block.id;
             h = sb->height;
 
             if(identical_line_counter < IDENDICAL_LINE_MAX && 
@@ -436,7 +438,7 @@ void Projection_grid::clear()
             {
                 sb = &pos[face][i][j];
 
-                sb->block_screen.id = BLOCK_EMPTY;
+                sb->opaque_block.id = BLOCK_EMPTY;
                 sb->transparent_block.id = BLOCK_EMPTY;
 
                 sb->render_flags = {0, 0, 0, 0};
