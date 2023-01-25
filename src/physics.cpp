@@ -20,16 +20,16 @@ void PhysicsEventWater::execute() {
 
             if ( 
                 // check if neighbour is in world
-                neighbour.chunk.x >= 0 && neighbour.chunk.x < world->max_chunk_coord.x &&
-                neighbour.chunk.y >= 0 && neighbour.chunk.y < world->max_chunk_coord.y &&
+                neighbour.chunk.x >= 0 && neighbour.chunk.x <= world->max_chunk_coord.x &&
+                neighbour.chunk.y >= 0 && neighbour.chunk.y <= world->max_chunk_coord.y &&
                 
 
                 // check if neighbour is empty
                 world->chunks[neighbour.chunk.x][neighbour.chunk.y][neighbour.chunk.z].blocks[neighbour.x][neighbour.y][neighbour.z].id == BLOCK_EMPTY
                 ) {
-                world_coordonate wcoord = world->convert_coord(neighbour);
+                // world_coordonate wcoord = world->convert_coord(neighbour);
                 // std::cout << "water spread to " << wcoord.x << ", " << wcoord.y << ", " << wcoord.z << std::endl;
-                event_handler->add_event(GAME_EVENT_SINGLE_BLOCK_MOD, wcoord, BLOCK_WATER);
+                event_handler->add_event(GAME_EVENT_SINGLE_BLOCK_MOD_ALT, neighbour, BLOCK_WATER);
                 PhysicsEventWater* event = new PhysicsEventWater(world, engine, event_handler, neighbour);
                 engine->add_event(event);
             }
@@ -43,8 +43,8 @@ void PhysicsEventWater::execute() {
         neighbour.chunk.z >= 0 && neighbour.chunk.z < world->max_chunk_coord.z &&
         world->chunks[neighbour.chunk.x][neighbour.chunk.y][neighbour.chunk.z].blocks[neighbour.x][neighbour.y][neighbour.z].id == BLOCK_EMPTY
         ) {
-        world_coordonate wcoord = world->convert_coord(neighbour);
-        event_handler->add_event(GAME_EVENT_SINGLE_BLOCK_MOD, wcoord, BLOCK_WATER);
+        // world_coordonate wcoord = world->convert_coord(neighbour);
+        event_handler->add_event(GAME_EVENT_SINGLE_BLOCK_MOD_ALT, neighbour, BLOCK_WATER);
         PhysicsEventWater* event = new PhysicsEventWater(world, engine, event_handler, neighbour);
         engine->add_event(event);
         }

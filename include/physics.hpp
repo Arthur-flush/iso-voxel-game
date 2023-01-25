@@ -46,7 +46,7 @@ private:
     block_coordonate coord;
     int tick_delay;
 public:
-    PhysicsEventWater(World* world, PhysicsEngine* engine, Multithreaded_Event_Handler* event_handler, block_coordonate coord, int tick_delay = 10) : PhysicsEvent(world, engine, event_handler, PHYSICS_EVENT_WATER), coord(coord), tick_delay(tick_delay) {}
+    PhysicsEventWater(World* world, PhysicsEngine* engine, Multithreaded_Event_Handler* event_handler, block_coordonate coord, int tick_delay = 5) : PhysicsEvent(world, engine, event_handler, PHYSICS_EVENT_WATER), coord(coord), tick_delay(tick_delay) {}
     void execute();
     bool operator==(const PhysicsEvent* other) const;
     block_coordonate get_coord() const { return coord; }

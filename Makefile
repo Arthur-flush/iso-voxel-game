@@ -27,7 +27,7 @@ linux: $(EXEC_linux)
 obj/main.o : main.cpp
 	$(CC) -c $(CPPFLAGS) $(WINFLAGS) $(SDLFLAGS) $(INCLUDE) $< -o $@ 
 
-obj/%.o : src/%.cpp
+obj/%.o : src/%.cpp include/%.hpp
 	$(CC) -c $(CPPFLAGS) $(WINFLAGS) $(SDLFLAGS) $(INCLUDE) $< -o $@ 
 
 PHONY : clean clean-linux run install default linux

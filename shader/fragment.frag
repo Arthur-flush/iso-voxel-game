@@ -288,7 +288,7 @@ void handle_water(vec4 pixel, vec4 pixel_norm)
     if(pixel.a > 1)
         pixel.a = 1;  
 
-    vec2 screen_pos = vec2(gl_FragCoord.x/win_const.x, (gl_FragCoord.y/win_const.y));
+    vec2 screen_pos = vec2(gl_FragCoord.x/win_const.x, gl_FragCoord.y/win_const.y);
     screen_pos = dist(screen_pos);
     vec4 pixel_world = texture(world, screen_pos);
 
