@@ -32,7 +32,6 @@ class Game
         Render_Engine RE;
         Multithreaded_Event_Handler GameEvent;
 
-
         void init(GPU_Target*);
         void init_Render_Engine(GPU_Target*);
 

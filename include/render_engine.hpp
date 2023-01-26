@@ -80,7 +80,8 @@ struct Render_Engine
     long double block_onscreen_size;
     long double block_onscreen_half;
     long double block_onscreen_quarter;
-
+    
+    int height_volume_tool;
     int max_height_render;
     
     Projection_grid projection_grid;

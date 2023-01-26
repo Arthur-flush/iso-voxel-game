@@ -50,8 +50,8 @@ Texture::Texture(uint32_t id)
         GPU_SetImageFilter(ptr, GPU_FILTER_NEAREST);
 
 
-        if(id == MOSAIC)
-            GPU_SetBlending(ptr, false);
+        // if(id == MOSAIC)
+        //     GPU_SetBlending(ptr, false);
         if(id == BACKGROUND_SUNSET)
             GPU_SetBlendMode(ptr, GPU_BLEND_NORMAL);
         if(id == BLOCK_HIGHLIGHT)

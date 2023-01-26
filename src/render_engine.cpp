@@ -167,8 +167,8 @@ void Render_Engine::set_block_renderflags(char face, int i, int j)
         sb->render_flags_transparent.a &= (128+64+32);
         sb->render_flags_transparent.a |= diff;
 
-        screen_block *sb_right = projection_grid.get_pos_world(sb->x_transparent, sb->y_transparent-1, sb->height_transparent-1);
-        // screen_block *sb_right2 = projection_grid.get_pos_world(sb->x, sb->y-1, sb->height);
+        // screen_block *sb_right = projection_grid.get_pos_world(sb->x_transparent, sb->y_transparent-1, sb->height_transparent-1);
+        screen_block *sb_right = projection_grid.get_pos_world(sb->x_transparent, sb->y_transparent-1, sb->height_transparent);
         if(sb_right)
         {
             diff = (sb->height_transparent-sb_right->height);
@@ -177,7 +177,8 @@ void Render_Engine::set_block_renderflags(char face, int i, int j)
             sb->render_flags_transparent.r |= diff;
         }
 
-        screen_block *sb_left = projection_grid.get_pos_world(sb->x_transparent-1, sb->y_transparent, sb->height_transparent-1);
+        // screen_block *sb_left = projection_grid.get_pos_world(sb->x_transparent-1, sb->y_transparent, sb->height_transparent-1);
+        screen_block *sb_left = projection_grid.get_pos_world(sb->x_transparent-1, sb->y_transparent, sb->height_transparent);
         if(sb_left)
         {
             diff = (sb->height_transparent-sb_left->height);
@@ -689,6 +690,7 @@ void Render_Engine::render_frame()
     GPU_ClearColor(screen2, {105, 156, 203, 255});
     GPU_ClearColor(screen3, {105, 156, 203, 255});
     GPU_ClearColor(screen,  {105, 156, 203, 255});
+    // GPU_ClearColor(depth_fbo, {0, 0, 0, 255});
 
     /****************** GENERATING BACKGROUND **************************/
     background_shader.activate();
@@ -739,8 +741,11 @@ void Render_Engine::render_frame()
     world_render_shader.activate();
     GPU_Blit(final_world_render, NULL, screen3, 0, 0);
     
+    // GPU_SetDepthFunction(RE.screen2, GPU_NEVER);
+    GPU_SetDepthWrite(screen3, false);
     shader.activate();
     render_transparent_world();
+    GPU_SetDepthWrite(screen3, true);
     /*******************************************************************/
 
     /****************** POST PROCESS SHADER ****************************/
@@ -749,7 +754,10 @@ void Render_Engine::render_frame()
     GPU_Blit(final_world_render, NULL, screen, 0, 0);
     post_process_shader.deactivate();
     /*******************************************************************/
-    // GPU_Blit(depth_fbo_image, NULL, screen, 0, 0);
+
+    // world_render_shader.activate();
+    GPU_Blit(depth_fbo_image, NULL, screen, 0, 0);
+    // world_render_shader.deactivate();
 
     // GPU_Flip(screen);
     SDL_CondWait(GameEvent->secondary_frame_op_finish, GameEvent->init_cond);

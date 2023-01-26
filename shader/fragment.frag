@@ -203,7 +203,7 @@ vec2 dist(vec2 uv)
 void handle_water(vec4 pixel, vec4 pixel_norm)
 {
     // determine depth height
-    float water_depth = float(shadows_flags%32)/16.0;;
+    float water_depth = float(shadows_flags%32)/16.0;
     vec4 pixel_parts = texture(parts, texCoord);
     float water_depth2 = 200;
 
@@ -221,6 +221,7 @@ void handle_water(vec4 pixel, vec4 pixel_norm)
             }
             else
             {
+                // pixel.g = 1;
                 water_depth2 = 200;
             }
         }
@@ -229,19 +230,46 @@ void handle_water(vec4 pixel, vec4 pixel_norm)
     {
         water_depth2 = float(render_flagsl%32)/16.0;
         
+        // float water_depth2_bis = float(render_flagsr%32)/16.0;
+
+        // if(water_depth2 < water_depth2_bis)
+        // {
+        //     water_depth2 = water_depth2_bis;
+        // }
+        
         if(water_depth2 < water_depth)
         {
             float water_depth3 = float(render_flagst%32)/16.0;
-
-            if(water_depth2 < water_depth3)
+            
+            if(water_depth2 <= water_depth3)
             {
                 // pixel.r = 1;
             }
             else
             {
-                // pixel.b = 1;
+
+                // float water_depth2_bis = float(render_flagsr%32)/16.0;
+
+                // if(water_depth2 < water_depth2_bis)
+                // {
+                //     pixel.b = 1;
+                //     water_depth2 = water_depth2_bis;
+                // }
+                // else
+                // {
+                //     pixel.r = 1;
+                // }
+
                 water_depth2 = 200;
             }
+        }
+        else
+        {
+            // float water_depth3 = float(render_flagst%32)/16.0;
+            // float water_depth4 = float(render_flagsr%32)/16.0;
+            
+            // if(water_depth4 == water_depth2 && water_depth == water_depth2 && water_depth2 == water_depth3)
+            //     pixel = pixel_parts;
         }
     }
     if(pixel_parts.b == 1)
@@ -256,7 +284,9 @@ void handle_water(vec4 pixel, vec4 pixel_norm)
             water_depth3 = float(render_flagsr%32)/16.0;
 
         if(water_depth3 < water_depth2)
-            water_depth2 = water_depth3; 
+        {
+            water_depth2 = water_depth3;
+        }
 
     }
     
@@ -272,9 +302,9 @@ void handle_water(vec4 pixel, vec4 pixel_norm)
     // return;
 
     // if(water_depth > 1)
-        // pixel.g = pixel.g + ((2-water_depth)/16.0);
+        pixel.g = pixel.g + ((2-water_depth)/16.0);
     
-    pixel.g = pixel.g + ((2-water_depth)/32.0);
+    // pixel.g = pixel.g + ((2-water_depth)/32.0);
 
     /// water color desaturation
     float desaturation_water_depthue = ((1-water_depth)/6.0); // version colorée
@@ -367,8 +397,8 @@ float diffraction(vec2 world_pos) {
 void handle_glass(vec4 pixel) {
     vec2 screen_pos = vec2(gl_FragCoord.x/win_const.x, gl_FragCoord.y/win_const.y);
     vec2 world_pos = vec2(
-        screen_pos.x - (win_const.z/1920.0), 
-        screen_pos.y - (win_const.w/1080.0)
+        screen_pos.x - (win_const.z/win_const.x), 
+        screen_pos.y - (win_const.w/win_const.y)
         );
     vec2 diffracted_pos = screen_pos + vec2(diffraction(world_pos)) * (sprite_size / 2048) ;
     vec4 pixel_world = texture(world, diffracted_pos);
@@ -389,6 +419,8 @@ void handle_depth()
 
     depthColor = vec4(float(block_height)/512);
     depthColor.a = 1;
+
+    fragColor.a = gl_FragDepth;
 }
 
 vec4 handle_border(vec4 pixel_norm, vec4 PixelTint)

@@ -45,6 +45,11 @@ int main(int argc, char *argv[])
                                            DEFAULT_WINDOWS_H,
                                            GPU_DEFAULT_INIT_FLAGS);
 
+    // GPU_Target *screen =  GPU_InitRenderer(GPU_RENDERER_OPENGL_4, 
+    //                                        800,
+    //                                        600,
+    //                                        GPU_DEFAULT_INIT_FLAGS);
+
     // GPU_SetFullscreen(true, false);
 
     if(screen)

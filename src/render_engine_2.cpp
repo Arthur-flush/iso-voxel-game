@@ -20,6 +20,8 @@ void Render_Engine::center_camera()
 {
     target.x = screen->w/2 - block_onscreen_half*(world.max_block_coord.x/2 - world.max_block_coord.y/2);
     target.y = screen->h/2 - block_onscreen_quarter*(world.max_block_coord.x/2 + world.max_block_coord.y/2);
+
+    // std::cout << "center camera\n";
 }
 
 void Render_Engine::highlight_block2()
@@ -185,6 +187,13 @@ void Render_Engine::highlight_block2()
         highlight_wcoord = {iguess.x+diff, iguess.y+diff, diff};
     }
 
+
+    if(highlight_type == HIGHLIGHT_VOLUME && highlight_wcoord2.z != -1)
+    {
+        int diff = height_volume_tool;
+        highlight_wcoord = {iguess.x+diff, iguess.y+diff, diff};
+    }
+
     // if( highlight_wcoord.x < 0 ||
     //     highlight_wcoord.y < 0 ||
     //     highlight_wcoord.z < 0 ||
@@ -193,9 +202,17 @@ void Render_Engine::highlight_block2()
     //     highlight_wcoord.z >= world.max_block_coord.z)
     //     highlight_wcoord = {-1, -1, -1};
 
-    set_in_interval(highlight_wcoord.x, 0, world.max_block_coord.x-1);
-    set_in_interval(highlight_wcoord.y, 0, world.max_block_coord.y-1);
-    set_in_interval(highlight_wcoord.z, 0, world.max_block_coord.z-1);
+    // if(highlight_wcoord.x != -1)
+    // {
+        set_in_interval(highlight_wcoord.x, 0, world.max_block_coord.x-1);
+        set_in_interval(highlight_wcoord.y, 0, world.max_block_coord.y-1);
+        set_in_interval(highlight_wcoord.z, 0, world.max_block_coord.z-1);
+    // }
+
+    if(highlight_type == HIGHLIGHT_VOLUME && highlight_wcoord2.z == -1)
+    {
+        height_volume_tool = highlight_wcoord.z;
+    }
 }
 
 void Render_Engine::set_global_illumination(float gi[4])

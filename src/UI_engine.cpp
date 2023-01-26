@@ -6,6 +6,8 @@ void UI_Engine::render_frame(int game_state, GPU_Target* screen, std::string &Ne
 
     if(game_state == STATE_MENU)
     {
+        New_world_name = "/noworld";
+
         for(auto i = main_menu.begin(); i != main_menu.end(); i++)
         {
             if((**i).is_mouse_over())

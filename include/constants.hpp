@@ -3,7 +3,7 @@
 
 #include <iostream>
 
-#define MAIN_GAME_VERSION "0.10.2"
+#define MAIN_GAME_VERSION "0.10.3"
 
 //////// WINDOW DEFAULT CONSTANTS ////////
 #define DEFAULT_WINDOWS_W 1920
