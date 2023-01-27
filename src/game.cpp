@@ -587,14 +587,14 @@ void Game::input_maingame()
                             break;
 
                         case SDLK_LEFT :
+                        case SDLK_a : 
                             Current_block = circularNext(unlocked_blocks, Current_block);
-                            // UI.set_ui_current_blocks(*circularPrev(unlocked_blocks, Current_block), *Current_block, *circularNext(unlocked_blocks, Current_block));
                             UI.set_ui_current_blocks(unlocked_blocks, Current_block);
                             break;
                         
                         case SDLK_RIGHT :
+                        case SDLK_e : 
                             Current_block = circularPrev(unlocked_blocks, Current_block);
-                            // UI.set_ui_current_blocks(*circularPrev(unlocked_blocks, Current_block), *Current_block, *circularNext(unlocked_blocks, Current_block));
                             UI.set_ui_current_blocks(unlocked_blocks, Current_block);
                             break;
 
