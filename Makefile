@@ -20,13 +20,19 @@ install : $(EXEC)
 obj/main.o : main.cpp
 	$(CC) -c $(CPPFLAGS) $(SDLFLAGS) $(INCLUDE) $< -o $@ 
 
-obj/%.o : src/%.cpp
+obj/render_engine_2.o: src/render_engine_2.cpp
+	$(CC) -c $(CPPFLAGS) $(SDLFLAGS) $(INCLUDE) $< -o $@
+
+obj/UI_tile.o: src/UI_tile.cpp
+	$(CC) -c $(CPPFLAGS) $(SDLFLAGS) $(INCLUDE) $< -o $@
+
+obj/%.o : src/%.cpp include/%.hpp
 	$(CC) -c $(CPPFLAGS) $(SDLFLAGS) $(INCLUDE) $< -o $@ 
 
 PHONY : clean
 
-clean : 
+clean-linux : 
 	$(DEL) $(EXEC) obj/*.o
 
-cleanwin : 
+clean : 
 	$(DEL_win) $(EXEC) obj\*.o

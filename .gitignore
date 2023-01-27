@@ -1,0 +1,9 @@
+*.o
+*.exe
+*.dll
+*.so
+
+# Visual Studio Code
+.vscode/*
+
+iso

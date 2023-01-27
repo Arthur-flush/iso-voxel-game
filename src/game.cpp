@@ -1,4 +1,5 @@
 #include <game.hpp>
+#include <cstdio>
 
 std::list<int>::iterator circularPrev(std::list<int> &l, std::list<int>::iterator &it)
 {
@@ -204,6 +205,24 @@ void Game::init(GPU_Target* _screen)
     world.world_view_position = 0;
 }
 
+int Game::save_world_extras(std::string filename, world_extras& extras) {
+    std::string total_filename = "saves/";
+    total_filename.append(filename);
+    total_filename.append("/extras.bin");
+
+    FILE* file = fopen(total_filename.c_str(), "wb");
+
+    if(!file) {
+        return SAVE_ERROR_FILE_NOT_OPEN;
+    }
+
+    fwrite(&extras, sizeof(world_extras), 1, file);
+
+    fclose(file);
+
+    return SAVE_ERROR_NONE;
+}
+
 int Game::load_world_extras(std::string filename, world_extras* extras) {
     std::string total_filename = "saves/";
     total_filename.append(filename);
@@ -222,36 +241,17 @@ int Game::load_world_extras(std::string filename, world_extras* extras) {
     return SAVE_ERROR_NONE;
 }
 
-int Game::save_world_extras(std::string filename, world_extras& extras)
-{
-    std::string total_filename = "saves/";
-    total_filename.append(filename);
-    total_filename.append("/extras.bin");
+void Game::world_extras_apply(world_extras& extras, world_extras_select extras_select) {
+    if (extras_select.camera_pos)
+        RE.target = extras.camera_pos; // peut être il faut d'autres trucs jsp
 
-    FILE* file = fopen(total_filename.c_str(), "wb");
-
-    if(!file) {
-        return SAVE_ERROR_FILE_NOT_OPEN;
-    }
-
-    fwrite(&extras, sizeof(world_extras), 1, file);
-
-    fclose(file);
-
-    return SAVE_ERROR_NONE;
-}
-
-void Game::world_extras_apply(world_extras& extras) {
-    RE.target = extras.camera_pos; // peut être il faut d'autres trucs jsp
-
-    if (RE.window.scale != extras.scale) {
+    if (RE.window.scale != extras.scale && extras_select.scale) {
         GameEvent.add_event(GAME_EVENT_NEWSCALE, extras.scale);
     }
 
-    if (world.world_view_position != extras.world_view_position) {
+    if (world.world_view_position != extras.world_view_position && extras_select.world_view_position) {
         world.world_view_position = extras.world_view_position;
     }
-
 }
 
 void Game::world_extras_fill(world_extras& extras) {
@@ -260,7 +260,7 @@ void Game::world_extras_fill(world_extras& extras) {
     extras.world_view_position = world.world_view_position;
 }
 
-int Game::load_world(std::string filename, bool new_size, bool recenter_camera, world_extras* extras, bool apply_extras)
+int Game::load_world(std::string filename, bool new_size, bool recenter_camera, world_extras* extras, world_extras_select extras_select)
 {
     // Uint64 start = Get_time_ms();
     // Uint64 end;
@@ -275,20 +275,17 @@ int Game::load_world(std::string filename, bool new_size, bool recenter_camera, 
 
     if(status == 0) 
     {
+
         if (extras != nullptr) {
             load_world_extras(filename, extras);
-            if (apply_extras) {
-                world_extras_apply(*extras);
-            }
-            else
-            {
-                world.world_view_position = extras->world_view_position;
+            if (extras_select) {
+                world_extras_apply(*extras, extras_select);
             }
         }
-        if (apply_extras) {
+        if (extras_select) {
             world_extras we;
             load_world_extras(filename, &we);
-            world_extras_apply(we);
+            world_extras_apply(we, extras_select);
         }
 
         if(new_size)
@@ -410,35 +407,35 @@ void Game::input_mainmenu()
             }
             break;
         
-        case SDL_MOUSEMOTION :
-            // New_world_name
-            // Current_world_name
+case SDL_MOUSEMOTION :
+    // New_world_name
+    // Current_world_name
+    
+    // std::cout << New_world_name << '\n';
+
+    if(New_world_name != Current_world_name && New_world_name[0] != '/')
+    {
+        // && New_world_name != "/noworld"
+        if(!GameEvent.is_NFS_reading_to_wpg)
+        {
+            RE.highlight_mode = HIGHLIGHT_MOD_NONE;
+            RE.highlight_type = HIGHLIGHT_BLOCKS;
+            UI.set_ui_hl_type(RE.highlight_mode);
+            UI.set_ui_hl_mode(RE.highlight_type);
+
+            RE.highlight_wcoord = {-1, -1, -1};
+            RE.highlight_wcoord2 = {-1, -1, -1};
+
             
-            // std::cout << New_world_name << '\n';
+            world_extras_select wes(false);
+            wes.world_view_position = true;
+            load_world(New_world_name, true, true, nullptr, wes);
+            
 
-            if(New_world_name != Current_world_name && New_world_name[0] != '/')
-            {
-                // && New_world_name != "/noworld"
-                if(!GameEvent.is_NFS_reading_to_wpg)
-                {
 
-                    RE.highlight_mode = HIGHLIGHT_MOD_NONE;
-                    RE.highlight_type = HIGHLIGHT_BLOCKS;
-                    UI.set_ui_hl_type(RE.highlight_mode);
-                    UI.set_ui_hl_mode(RE.highlight_type);
-
-                    RE.highlight_wcoord = {-1, -1, -1};
-                    RE.highlight_wcoord2 = {-1, -1, -1};
-
-                    world_extras we;
-                    // world.world_view_position = we.world_view_position;
-                    load_world(New_world_name, true, true, &we, false);
-
-                    // load_world(New_world_name, true, true, nullptr, false);
-                    // load_world(New_world_name, true, true);
-                    Current_world_name = New_world_name;
-                }
-            }
+            Current_world_name = New_world_name;
+        }
+    }
             // Current_world_name = "/noworld";
 
             break;
@@ -702,10 +699,31 @@ void Game::input_maingame()
                         //     }
                         //     break;
 
+                        // print begin and end coordinates of a selection as well as the length on the three axes
+                        case SDLK_w: { 
+                            if (RE.highlight_mode > HIGHLIGHT_MOD_NONE) {
+                                std::cout << "Selection begin: x = " << RE.highlight_wcoord2.x 
+                                << ", y = " << RE.highlight_wcoord2.y 
+                                << ", z = " << RE.highlight_wcoord2.z << std::endl;
+
+                                std::cout << "Selection end: x = " 
+                                << RE.highlight_wcoord.x 
+                                << ", y = " << RE.highlight_wcoord.y 
+                                << ", z = " << RE.highlight_wcoord.z << std::endl;
+
+                                std::cout << "Selection length: x = " 
+                                << abs(RE.highlight_wcoord.x - RE.highlight_wcoord2.x) + 1 
+                                << ", y = " << abs(RE.highlight_wcoord.y - RE.highlight_wcoord2.y) +1 
+                                << ", z = " << abs(RE.highlight_wcoord.z - RE.highlight_wcoord2.z) +1 
+                                << std::endl << std::endl;
+                                
+                            }
+                            break;
+                        }
+
                         default : break;
                     }
                 break;
-
             case SDL_MOUSEMOTION :
                 if(event.motion.state == SDL_BUTTON_RMASK)
                 {

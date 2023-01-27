@@ -6,10 +6,11 @@
 #include <math.h>
 #include <chrono>
 #include <list>
+#include <cstring>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_gpu.h>
 
-#include <ui_engine.hpp>
+#include <UI_engine.hpp>
 #include <render_engine.hpp>
 #include <multithreaded_event_handler.hpp>
 
@@ -19,6 +20,21 @@ struct world_extras {
     pixel_coord camera_pos;
     float scale;
     int world_view_position;
+};
+
+struct world_extras_select {
+    bool camera_pos;
+    bool scale;
+    bool world_view_position;
+
+    world_extras_select(bool value = false) {
+        memset(this, (int)value, sizeof(*this)); // set all to value, cursed level 7/10
+    }
+
+    operator bool() { // check if any is true
+        world_extras_select tmp(false);
+        return memcmp(this, &tmp, sizeof(*this)); 
+    }
 };
 
 class Game
@@ -48,7 +64,7 @@ class Game
         // only set it to false if you want fast loading and know what you are doing, true by default
         // if world_extras is not null, it will be filled with the world_extras from the corresponding file
         // if apply_extras is true, the world_extras will be applied to the world
-        int load_world(std::string filename, bool new_size = true, bool recenter_camera = false, world_extras* extras = nullptr, bool apply_extras = true);
+        int load_world(std::string filename, bool new_size = true, bool recenter_camera = false, world_extras* extras = nullptr, world_extras_select extras_select = world_extras_select(true));
 
         // saves a world extra given as a parameter to a file
         int save_world_extras(std::string filename, world_extras& extras);
@@ -57,7 +73,7 @@ class Game
         int load_world_extras(std::string filename, world_extras* extras);
 
         // applies a world_extras to the world / Render Engine / whatever else
-        void world_extras_apply(world_extras& extras);
+        void world_extras_apply(world_extras& extras, world_extras_select extras_select = world_extras_select(true));
 
         // fills a world_extras with the corresponding data
         void world_extras_fill(world_extras& extras);

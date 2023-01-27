@@ -66,7 +66,7 @@ void Texture::init_from_file(const char* filename)
     if(ptr)
         return;
 
-    SDL_RWFromFile(filename, "r");
+    // SDL_RWops* rwops = SDL_RWFromFile(filename, "r");
 
     ptr = GPU_LoadImage(filename);
     
