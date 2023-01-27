@@ -110,6 +110,7 @@ class Multithreaded_Event_Handler
         // Prepare all secondary thread operation and send them to the corresponding thread
         // It does not include nfs events
         void handle();
+        void drop_game_event();
         /****************************/
 
         /********* NFS OP ************/

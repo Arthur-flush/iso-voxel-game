@@ -452,6 +452,14 @@ void Multithreaded_Event_Handler::handle()
     }
 }
 
+void Multithreaded_Event_Handler::drop_game_event()
+{
+    while(event_queue.size() != 0)
+    {
+        event_queue.pop();
+    }
+}
+
 int SecondaryThread_operations(void *data)
 {
     Multithreaded_Event_Handler* MEH = (Multithreaded_Event_Handler*)data;
@@ -526,10 +534,10 @@ int NFS_operations(void *data)
 
             event = NFS_OP_NONE;
 
-
             while(!MEH->nfs_event_queue.empty())
             {
                 event = MEH->nfs_event_queue.front();
+                MEH->nfs_event_queue.pop();
 
                 MEH->is_NFS_reading_to_wpg = true;
                 switch (event)
@@ -557,8 +565,6 @@ int NFS_operations(void *data)
                     break;
                 }
                 MEH->is_NFS_reading_to_wpg = false;
-
-                MEH->nfs_event_queue.pop();
             }
         }
 

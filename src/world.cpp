@@ -27,8 +27,6 @@ void World::init(uint16_t _x, uint16_t _y, uint16_t _z)
     min_chunk_coord = {0, 0, 0};
 
     max_block_coord = {_x*CHUNK_SIZE, _y*CHUNK_SIZE, _z*CHUNK_SIZE};
-
-    world_view_position = 0;
 }
 
 World::~World()
@@ -448,6 +446,22 @@ bool World::modify_block(world_coordonate wcoord, int id)
     compress_chunk(coord.chunk.x, coord.chunk.y, coord.chunk.z);
 
     return true;
+}
+
+int World::find_highest_nonemptychunk()
+{
+    for(int z = max_chunk_coord.z; z > 0; z--)
+    for(int x = 0; x <= max_chunk_coord.x; x++)
+    for(int y = 0; y <= max_chunk_coord.y; y++)
+    {
+        if(chunks[x][y][z].compress_value != CHUNK_EMPTY)
+        {
+            highest_nonemptychunk = z;
+            return z;
+        }
+    }
+
+    return 1;
 }
 
 int World::save_to_file(const std::string& filename) {
