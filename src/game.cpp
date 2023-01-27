@@ -201,6 +201,8 @@ void Game::init(GPU_Target* _screen)
     RE.set_global_illumination(basic_gi);
 
     GameEvent.add_event(GAME_EVENT_CAMERA_MOUVEMENT, (pixel_coord){RE.window.size.x/2, RE.window.size.y/2});
+
+    world.world_view_position = 0;
 }
 
 int Game::save_world_extras(std::string filename, world_extras& extras) {
@@ -325,9 +327,9 @@ int Game::load_world(std::string filename, bool new_size, bool recenter_camera, 
 
 void Game::refresh_world_render()
 {
-    RE.projection_grid.refresh_visible_frags(RE.target, RE.screen->w, RE.screen->h, RE.block_onscreen_size);
-
     GameEvent.drop_all_nfs_event();
+
+    RE.projection_grid.refresh_visible_frags(RE.target, RE.screen->w, RE.screen->h, RE.block_onscreen_size);
     RE.projection_grid.clear();
     RE.projection_grid.save_curr_interval();
     RE.refresh_pg_onscreen();
@@ -338,10 +340,10 @@ void Game::refresh_world_render()
 
 void Game::refresh_world_render_fast()
 {
+    GameEvent.drop_all_nfs_event();
     RE.projection_grid.refresh_visible_frags(RE.target, RE.screen->w, RE.screen->h, RE.block_onscreen_size);
 
-    GameEvent.drop_all_nfs_event();
-    RE.projection_grid.clear();
+    // RE.projection_grid.clear();
     RE.projection_grid.save_curr_interval();
     // RE.refresh_pg_onscreen();
     // RE.refresh_pg_block_visible();
@@ -449,6 +451,8 @@ void Game::input_maingame()
     SDL_Keymod km = SDL_GetModState();
     SDL_GetMouseState((int*)&mouse.x, (int*)&mouse.y);
     int status;
+
+    bool rwr = false;
 
     while(SDL_PollEvent(&event))
     {
@@ -655,9 +659,9 @@ void Game::input_maingame()
                         }
 
                         case SDLK_F9 :
-                            if(!GameEvent.is_NFS_reading_to_wpg) {
+                            GameEvent.drop_game_event();
+                            if(!GameEvent.is_NFS_reading_to_wpg)
                                 load_world(Current_world_name);
-                            }
                         break;
 
                         case SDLK_r :
@@ -666,14 +670,14 @@ void Game::input_maingame()
                             break;
 
                         case SDLK_LEFT :
+                        case SDLK_a : 
                             Current_block = circularNext(unlocked_blocks, Current_block);
-                            // UI.set_ui_current_blocks(*circularPrev(unlocked_blocks, Current_block), *Current_block, *circularNext(unlocked_blocks, Current_block));
                             UI.set_ui_current_blocks(unlocked_blocks, Current_block);
                             break;
                         
                         case SDLK_RIGHT :
+                        case SDLK_e : 
                             Current_block = circularPrev(unlocked_blocks, Current_block);
-                            // UI.set_ui_current_blocks(*circularPrev(unlocked_blocks, Current_block), *Current_block, *circularNext(unlocked_blocks, Current_block));
                             UI.set_ui_current_blocks(unlocked_blocks, Current_block);
                             break;
 
@@ -714,12 +718,12 @@ void Game::input_maingame()
                                 << std::endl << std::endl;
                                 
                             }
+                            break;
                         }
 
                         default : break;
                     }
                 break;
-
             case SDL_MOUSEMOTION :
                 if(event.motion.state == SDL_BUTTON_RMASK)
                 {
@@ -731,7 +735,14 @@ void Game::input_maingame()
 
                 if(km & KMOD_LSHIFT)
                 {
-                    RE.max_height_render += event.wheel.y;
+                    world.find_highest_nonemptychunk();
+
+                    if(RE.max_height_render > (world.highest_nonemptychunk+1)*CHUNK_SIZE)
+                    {
+                        RE.max_height_render = (world.highest_nonemptychunk+1)*CHUNK_SIZE + event.wheel.y;
+                    }
+                    else
+                        RE.max_height_render += event.wheel.y;
 
                     if(RE.max_height_render > world.max_block_coord.z)
                         RE.max_height_render = world.max_block_coord.z;
@@ -739,7 +750,7 @@ void Game::input_maingame()
                     else if(RE.max_height_render < 1)
                         RE.max_height_render = 1;
 
-                    refresh_world_render();
+                    rwr = true;
                 }
                 else if(km & KMOD_LCTRL)
                 {
@@ -756,14 +767,6 @@ void Game::input_maingame()
             case SDL_MOUSEBUTTONDOWN :
                 if(event.button.button == SDL_BUTTON_LEFT)
                 {
-                    // if(RE.highlight_mode == HIGHLIGHT_REMOVE)
-                    //     GameEvent.add_event(GAME_EVENT_SINGLE_BLOCK_MOD, (coord3D)RE.highlight_wcoord, BLOCK_EMPTY);
-                    
-                    // else if(RE.highlight_mode == HIGHLIGHT_PLACE || RE.highlight_mode == HIGHLIGHT_PLACE_ALT)
-                    //     GameEvent.add_event(GAME_EVENT_SINGLE_BLOCK_MOD, (coord3D)RE.highlight_wcoord, Current_block);
-                    
-                    
-
                     if(RE.highlight_wcoord2.x == -1 && RE.highlight_type >= HIGHLIGHT_FLOOR)
                     {
                         RE.highlight_wcoord2 = RE.highlight_wcoord;
@@ -789,6 +792,9 @@ void Game::input_maingame()
                 break;
             }
     }
+
+    if(rwr)
+        refresh_world_render();
 };
 
 int Game::mainloop()

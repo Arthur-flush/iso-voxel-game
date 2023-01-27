@@ -52,6 +52,8 @@ int main(int argc, char *argv[])
 
     // GPU_SetFullscreen(true, false);
 
+    SDL_ShowCursor(SDL_DISABLE);
+
     if(screen)
     {
         Game Iso(screen);

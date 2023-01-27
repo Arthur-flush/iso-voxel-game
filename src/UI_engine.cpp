@@ -44,6 +44,13 @@ void UI_Engine::render_frame(int game_state, GPU_Target* screen, std::string &Ne
         main_game_hl_mode->render(UI);
     }
 
+    if(game_state != STATE_MENU || New_world_name == "/noworld")
+    {
+        // SDL_GetMouseState((int*)&mouse.x, (int*)&mouse.y);
+        GPU_CircleFilled(UI, mouse.x, mouse.y, 7, {62, 62, 62, 255});
+        GPU_CircleFilled(UI, mouse.x, mouse.y, 5, {250, 250, 250, 255});
+    }
+
     GPU_Blit(UI_image, NULL, screen, 0, 0);
 }
 

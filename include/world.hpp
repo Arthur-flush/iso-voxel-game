@@ -50,7 +50,8 @@ struct World
     // Like everything in the world struct, it automaticly take car of world view position transformation
     bool modify_block(world_coordonate, int);
 
-    bool modify_block(world_coordonate, world_coordonate, int);
+    int highest_nonemptychunk;
+    int find_highest_nonemptychunk();
 
     /* load and save functions
      * returns an int that encode an error code
