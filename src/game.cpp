@@ -1,4 +1,5 @@
 #include <game.hpp>
+#include <cstdio>
 
 std::list<int>::iterator circularPrev(std::list<int> &l, std::list<int>::iterator &it)
 {
@@ -202,7 +203,62 @@ void Game::init(GPU_Target* _screen)
     GameEvent.add_event(GAME_EVENT_CAMERA_MOUVEMENT, (pixel_coord){RE.window.size.x/2, RE.window.size.y/2});
 }
 
-int Game::load_world(std::string filename, bool new_size, bool recenter_camera)
+int Game::save_world_extras(std::string filename, world_extras& extras) {
+    std::string total_filename = "saves/";
+    total_filename.append(filename);
+    total_filename.append("/extras.bin");
+
+    FILE* file = fopen(total_filename.c_str(), "wb");
+
+    if(!file) {
+        return SAVE_ERROR_FILE_NOT_OPEN;
+    }
+
+    fwrite(&extras, sizeof(world_extras), 1, file);
+
+    fclose(file);
+
+    return SAVE_ERROR_NONE;
+}
+
+int Game::load_world_extras(std::string filename, world_extras* extras) {
+    std::string total_filename = "saves/";
+    total_filename.append(filename);
+    total_filename.append("/extras.bin");
+
+    FILE* file = fopen(total_filename.c_str(), "rb");
+
+    if(!file) {
+        return SAVE_ERROR_FILE_NOT_OPEN;
+    }
+
+    fread(extras, sizeof(world_extras), 1, file);
+
+    fclose(file);
+
+    return SAVE_ERROR_NONE;
+}
+
+void Game::world_extras_apply(world_extras& extras, world_extras_select extras_select) {
+    if (extras_select.camera_pos)
+        RE.target = extras.camera_pos; // peut être il faut d'autres trucs jsp
+
+    if (RE.window.scale != extras.scale && extras_select.scale) {
+        GameEvent.add_event(GAME_EVENT_NEWSCALE, extras.scale);
+    }
+
+    if (world.world_view_position != extras.world_view_position && extras_select.world_view_position) {
+        world.world_view_position = extras.world_view_position;
+    }
+}
+
+void Game::world_extras_fill(world_extras& extras) {
+    extras.camera_pos = RE.target;
+    extras.scale = RE.window.scale;
+    extras.world_view_position = world.world_view_position;
+}
+
+int Game::load_world(std::string filename, bool new_size, bool recenter_camera, world_extras* extras, world_extras_select extras_select)
 {
     // Uint64 start = Get_time_ms();
     // Uint64 end;
@@ -217,6 +273,19 @@ int Game::load_world(std::string filename, bool new_size, bool recenter_camera)
 
     if(status == 0) 
     {
+
+        if (extras != nullptr) {
+            load_world_extras(filename, extras);
+            if (extras_select) {
+                world_extras_apply(*extras, extras_select);
+            }
+        }
+        if (extras_select) {
+            world_extras we;
+            load_world_extras(filename, &we);
+            world_extras_apply(we, extras_select);
+        }
+
         if(new_size)
         {
             RE.projection_grid.free_pos();
@@ -336,29 +405,35 @@ void Game::input_mainmenu()
             }
             break;
         
-        case SDL_MOUSEMOTION :
-            // New_world_name
-            // Current_world_name
+case SDL_MOUSEMOTION :
+    // New_world_name
+    // Current_world_name
+    
+    // std::cout << New_world_name << '\n';
+
+    if(New_world_name != Current_world_name && New_world_name[0] != '/')
+    {
+        // && New_world_name != "/noworld"
+        if(!GameEvent.is_NFS_reading_to_wpg)
+        {
+            RE.highlight_mode = HIGHLIGHT_MOD_NONE;
+            RE.highlight_type = HIGHLIGHT_BLOCKS;
+            UI.set_ui_hl_type(RE.highlight_mode);
+            UI.set_ui_hl_mode(RE.highlight_type);
+
+            RE.highlight_wcoord = {-1, -1, -1};
+            RE.highlight_wcoord2 = {-1, -1, -1};
+
             
-            // std::cout << New_world_name << '\n';
+            world_extras_select wes(false);
+            wes.world_view_position = true;
+            load_world(New_world_name, true, true, nullptr, wes);
+            
 
-            if(New_world_name != Current_world_name && New_world_name[0] != '/')
-            {
-                // && New_world_name != "/noworld"
-                if(!GameEvent.is_NFS_reading_to_wpg)
-                {
-                    RE.highlight_mode = HIGHLIGHT_MOD_NONE;
-                    RE.highlight_type = HIGHLIGHT_BLOCKS;
-                    UI.set_ui_hl_type(RE.highlight_mode);
-                    UI.set_ui_hl_mode(RE.highlight_type);
 
-                    RE.highlight_wcoord = {-1, -1, -1};
-                    RE.highlight_wcoord2 = {-1, -1, -1};
-
-                    load_world(New_world_name, true, true);
-                    Current_world_name = New_world_name;
-                }
-            }
+            Current_world_name = New_world_name;
+        }
+    }
             // Current_world_name = "/noworld";
 
             break;
@@ -567,6 +642,9 @@ void Game::input_maingame()
 
                             if(status == 0)
                             {
+                                world_extras we;
+                                world_extras_fill(we);
+                                save_world_extras(Current_world_name, we);
                                 std::cout << "world saved !\n";
                             }
                             else
@@ -577,8 +655,9 @@ void Game::input_maingame()
                         }
 
                         case SDLK_F9 :
-                            if(!GameEvent.is_NFS_reading_to_wpg)
+                            if(!GameEvent.is_NFS_reading_to_wpg) {
                                 load_world(Current_world_name);
+                            }
                         break;
 
                         case SDLK_r :
@@ -615,6 +694,27 @@ void Game::input_maingame()
                         //         GameEvent.add_event(GAME_EVENT_SINGLE_BLOCK_MOD_ALT, test, BLOCK_RED);
                         //     }
                         //     break;
+
+                        // print begin and end coordinates of a selection as well as the length on the three axes
+                        case SDLK_w: { 
+                            if (RE.highlight_mode > HIGHLIGHT_MOD_NONE) {
+                                std::cout << "Selection begin: x = " << RE.highlight_wcoord2.x 
+                                << ", y = " << RE.highlight_wcoord2.y 
+                                << ", z = " << RE.highlight_wcoord2.z << std::endl;
+
+                                std::cout << "Selection end: x = " 
+                                << RE.highlight_wcoord.x 
+                                << ", y = " << RE.highlight_wcoord.y 
+                                << ", z = " << RE.highlight_wcoord.z << std::endl;
+
+                                std::cout << "Selection length: x = " 
+                                << abs(RE.highlight_wcoord.x - RE.highlight_wcoord2.x) + 1 
+                                << ", y = " << abs(RE.highlight_wcoord.y - RE.highlight_wcoord2.y) +1 
+                                << ", z = " << abs(RE.highlight_wcoord.z - RE.highlight_wcoord2.z) +1 
+                                << std::endl << std::endl;
+                                
+                            }
+                        }
 
                         default : break;
                     }

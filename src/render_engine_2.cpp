@@ -190,8 +190,8 @@ void Render_Engine::highlight_block2()
 
     if(highlight_type == HIGHLIGHT_VOLUME && highlight_wcoord2.z != -1)
     {
-        int diff = height_volume_tool;
-        highlight_wcoord = {iguess.x+diff, iguess.y+diff, diff};
+        int diff = highlight_wcoord2.z;
+        highlight_wcoord = {iguess.x+diff, iguess.y+diff, height_volume_tool};
     }
 
     // if( highlight_wcoord.x < 0 ||
