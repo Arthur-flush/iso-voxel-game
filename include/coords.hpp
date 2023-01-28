@@ -8,7 +8,12 @@ struct coord3D
     int x;
     int y;
     int z;
+
+    bool operator==(const coord3D& other) const;
+
 };
+
+
 
 typedef coord3D chunk_coordonate;
 
@@ -17,11 +22,18 @@ typedef coord3D world_coordonate;
 struct block_coordonate : coord3D
 {
     chunk_coordonate chunk;
+
+
+    block_coordonate() : coord3D{0, 0, 0}, chunk{0, 0, 0} {}
+    block_coordonate(int x, int y, int z, chunk_coordonate chunk) : coord3D{x, y, z}, chunk{chunk} {}
+    block_coordonate(const block_coordonate& other) : coord3D{other.x, other.y, other.z}, chunk{other.chunk} {}
+
     bool operator==(const block_coordonate& other) const;
     
     bool operator<(const block_coordonate& other) const;
 
     block_coordonate operator+(const coord3D& other) const;
+
 };
 
 

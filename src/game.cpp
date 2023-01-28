@@ -12,8 +12,11 @@ std::list<int>::iterator circularNext(std::list<int> &l, std::list<int>::iterato
 
 pixel_coord mouse = {0};
 
-Game::Game(GPU_Target* _screen) : RE(world), GameEvent(RE), physics_engine()
+
+Game::Game(GPU_Target* _screen) :  RE(world), GameEvent(RE), physics_engine(&world, &GameEvent)
 {
+    world.SetPhysicsEngine(&physics_engine);
+    GameEvent.SetPhysicsEngine(&physics_engine); 
     state = STATE_QUIT;
     init(_screen);
 }
@@ -191,11 +194,14 @@ int Game::load_world(std::string filename, bool new_size, bool recenter_camera, 
     Uint64 end_load;
     Uint64 end_refresh;
 
+    physics_engine.clear_events();
+
     std::string total_filename = "saves/";
 
     total_filename.append(filename);
 
     total_filename.append("/world.isosave");
+
 
     int status = world.load_from_file(total_filename.c_str());
     end_load = Get_time_ms();
@@ -531,6 +537,11 @@ void Game::input_maingame()
                             std::cout << "World view position : " << world.world_view_position << '\n';
                             break;
                         
+                        case SDLK_KP_MINUS :
+                            std::cout << "toggle physics engine\n";
+                            physics_engine.toggle_running();
+                            break;
+                        
                         // case SDLK_KP_ENTER : 
                         //     for(int i = 0; i < 500; i++)
                         //     {
@@ -541,6 +552,27 @@ void Game::input_maingame()
                         //         GameEvent.add_event(GAME_EVENT_SINGLE_BLOCK_MOD_ALT, test, BLOCK_RED);
                         //     }
                         //     break;
+
+                        case SDLK_w: { 
+                            if (RE.highlight_mode > HIGHLIGHT_MOD_NONE) {
+                                std::cout << "Selection begin: x = " << RE.highlight_wcoord2.x 
+                                << ", y = " << RE.highlight_wcoord2.y 
+                                << ", z = " << RE.highlight_wcoord2.z << std::endl;
+
+                                std::cout << "Selection end: x = " 
+                                << RE.highlight_wcoord.x 
+                                << ", y = " << RE.highlight_wcoord.y 
+                                << ", z = " << RE.highlight_wcoord.z << std::endl;
+
+                                std::cout << "Selection length: x = " 
+                                << abs(RE.highlight_wcoord.x - RE.highlight_wcoord2.x) + 1 
+                                << ", y = " << abs(RE.highlight_wcoord.y - RE.highlight_wcoord2.y) +1 
+                                << ", z = " << abs(RE.highlight_wcoord.z - RE.highlight_wcoord2.z) +1 
+                                << std::endl << std::endl;
+                                
+                            }
+                            break;
+                        }
 
                         default : break;
                     }
@@ -593,8 +625,12 @@ void Game::input_maingame()
                     else if(RE.highlight_mode >= HIGHLIGHT_MOD_REPLACE)
                     {
                         GameEvent.add_event(GAME_EVENT_SINGLE_BLOCK_MOD, (coord3D)RE.highlight_wcoord, *Current_block);
-                        PhysicsEventWater *new_event = new PhysicsEventWater(&world, &physics_engine, &GameEvent, world.convert_wcoord(RE.highlight_wcoord.x, RE.highlight_wcoord.y, RE.highlight_wcoord.z));
-                        physics_engine.add_event(new_event);
+
+                        if (*Current_block == BLOCK_WATER)
+                        {
+                            PhysicsEventWater *new_event = new PhysicsEventWater(&world, &physics_engine, &GameEvent, world.convert_wcoord(RE.highlight_wcoord.x, RE.highlight_wcoord.y, RE.highlight_wcoord.z));
+                            physics_engine.add_event(new_event);
+                        }
                     }
                     else if(RE.highlight_mode == HIGHLIGHT_MOD_DELETE)
                     {
@@ -602,6 +638,8 @@ void Game::input_maingame()
                     }
                 }
                 break;
+
+            
 
             default:
                 break;

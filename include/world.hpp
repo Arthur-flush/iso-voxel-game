@@ -1,14 +1,14 @@
 #ifndef WORLD_HPP
 #define WORLD_HPP
 
+class PhysicsEngine; // forward declaration
+
 #include <blocks.hpp>
 #include <coords.hpp>
+#include <physics.hpp>
 
 struct World
 {
-    World();
-    ~World();
-
     void init(uint16_t, uint16_t, uint16_t);
     void free_chunks();
 
@@ -18,6 +18,13 @@ struct World
     chunk_coordonate max_block_coord;
 
     chunk ***chunks;
+
+    PhysicsEngine* physics_engine;
+
+    World() {chunks = NULL;}
+    ~World();
+
+    void SetPhysicsEngine(PhysicsEngine* pe) {physics_engine = pe;}
 
     block* get_block(chunk_coordonate, int, int, int);
     block* get_block_wcoord(int, int, int);

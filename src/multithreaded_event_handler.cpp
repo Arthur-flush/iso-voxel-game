@@ -19,6 +19,7 @@ std::string format(unsigned long long i) {
 
 Multithreaded_Event_Handler::Multithreaded_Event_Handler(Render_Engine &_RE) : RE{_RE}
 {
+    PE = NULL;
     init_cond = SDL_CreateMutex();
     new_frame_to_render = SDL_CreateCond();
     secondary_frame_op_finish = SDL_CreateCond();
@@ -191,6 +192,10 @@ void Multithreaded_Event_Handler::handle()
 
         case GAME_EVENT_SINGLE_BLOCK_MOD :
         {
+            // std::cout << "attempting to lock world mutex in single block mod\n"; 
+            PE->world_mutex.lock();
+            // std::cout << "world mutex lock in single block mod" << std::endl;
+
             if(RE.highlight_wcoord2.x == -1)
             {
                 if(RE.world.modify_block(event.data.wcoord1, event.data.blockid))
@@ -213,6 +218,7 @@ void Multithreaded_Event_Handler::handle()
 
                 int zbeg = RE.highlight_wcoord.z;
                 int zend = RE.highlight_wcoord2.z;
+
 
                 if(RE.highlight_wcoord.x > RE.highlight_wcoord2.x)
                 {
@@ -238,7 +244,8 @@ void Multithreaded_Event_Handler::handle()
 
                 // Uint64 itcounter = 0;
 
-                if(estimate_itcounter < 30000)
+                if(estimate_itcounter < 0) // DEBUG: UNDO WHEN DONE DEBUGING
+                // sorry if I forget :pleading_face:
                 {
                     for(int y = ybeg; y <= yend; y ++)
                     {
@@ -293,15 +300,15 @@ void Multithreaded_Event_Handler::handle()
 
                         int chunk_xbeg = (xbeg + CHUNK_SIZE - (xbeg%CHUNK_SIZE))/CHUNK_SIZE;
                         chunk_xbeg = xbeg%CHUNK_SIZE ? chunk_xbeg : xbeg/CHUNK_SIZE;
-                        int chunk_xend = (xend - (xend%CHUNK_SIZE))/CHUNK_SIZE;
+                        int chunk_xend = ((xend+1) - ((xend+1)%CHUNK_SIZE))/CHUNK_SIZE;
 
                         int chunk_ybeg = (ybeg + CHUNK_SIZE - (ybeg%CHUNK_SIZE))/CHUNK_SIZE;
                         chunk_ybeg = ybeg%CHUNK_SIZE ? chunk_ybeg : ybeg/CHUNK_SIZE;
-                        int chunk_yend = (yend - (yend%CHUNK_SIZE))/CHUNK_SIZE;
+                        int chunk_yend = ((yend+1) - ((yend+1)%CHUNK_SIZE))/CHUNK_SIZE;
 
                         int chunk_zbeg = (zbeg + CHUNK_SIZE - (zbeg%CHUNK_SIZE))/CHUNK_SIZE;
                         chunk_zbeg = zbeg%CHUNK_SIZE ? chunk_zbeg : zbeg/CHUNK_SIZE;
-                        int chunk_zend = (zend - (zend%CHUNK_SIZE))/CHUNK_SIZE;
+                        int chunk_zend = ((zend+1) - ((zend+1)%CHUNK_SIZE))/CHUNK_SIZE;
 
                         int chunk_xbeg_wvp = chunk_xbeg;
                         int chunk_xend_wvp = chunk_xend;
@@ -339,6 +346,7 @@ void Multithreaded_Event_Handler::handle()
                             chunk_xend_wvp = tmp;
                         }
 
+                        int itcounter = 0;
                         for(int cx = chunk_xbeg_wvp; cx < chunk_xend_wvp; cx++)
                         for(int cy = chunk_ybeg_wvp; cy < chunk_yend_wvp; cy++)
                         for(int cz = chunk_zbeg_wvp; cz < chunk_zend_wvp; cz++)
@@ -346,9 +354,22 @@ void Multithreaded_Event_Handler::handle()
                             // itcounter += CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
                             memset(RE.world.chunks[cx][cy][cz].blocks, event.data.blockid, CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE * sizeof(block));
                             RE.world.chunks[cx][cy][cz].compress_value = event.data.blockid;
+                            
+                            chunk_coordonate c = {cx, cy, cz};
+                            PE->add_event(PHYSICS_EVENT_WATER_CHECK_CHUNK, &c);
+                            itcounter ++;
+                            // std::cout << "adding event for chunk " << cx << " " << cy << " " << cz << std::endl;
                         }
 
-                    
+                        // std::cout << "memset chunks: " << itcounter << std::endl;
+                        // std::cout << "chunk_xend_wvp: " << chunk_xend_wvp << std::endl;
+                        // std::cout << "chunk_yend_wvp: " << chunk_yend_wvp << std::endl;
+                        // std::cout << "chunk_zend_wvp: " << chunk_zend_wvp << std::endl;
+
+                        // std::cout << "xend: " << xend << std::endl;
+                        // std::cout << "yend: " << yend << std::endl;
+                        // std::cout << "zend: " << zend << std::endl;
+
                         for(int z = zbeg; z <= zend; z ++)
                             {
 
@@ -391,12 +412,17 @@ void Multithreaded_Event_Handler::handle()
                 // SecondaryThread_opcode |= STHREAD_OP_PG_BLOCK_VISIBLE;  
             }
 
+            // std::cout << "world mutex unlock in game event single block mod" << std::endl;
+            PE->world_mutex.unlock();
             RE.projection_grid.refresh_all_identical_line(); 
-        }
             break;
+        }
 
         case GAME_EVENT_SINGLE_BLOCK_MOD_ALT :
             {
+                // std::cout << "attempting to lock world mutex in game event single block mod alt" << std::endl;
+                PE->world_mutex.lock();
+                // std::cout << "world mutex lock in game event single block mod alt" << std::endl;
                 block_coordonate bc = event.data.coord1;
 
                 block *b = &RE.world.
@@ -427,8 +453,10 @@ void Multithreaded_Event_Handler::handle()
                     refresh_identical_line = true;
                 }
 
+                // std::cout << "world mutex unlock in game event single block mod alt" << std::endl;
+                PE->world_mutex.unlock();
+                break;
             }
-            break;
 
         case GAME_EVENT_INIT_WORLD_RENDER_FLAGS :
             SecondaryThread_opcode |= STHREAD_OP_ALL_RENDER_FLAG;

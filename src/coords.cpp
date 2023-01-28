@@ -1,4 +1,5 @@
 #include <coords.hpp>
+#include <constants.hpp>
 
 bool block_coordonate::operator<(const block_coordonate& other) const{
     if (chunk.x < other.chunk.x) return true;
@@ -62,4 +63,8 @@ block_coordonate block_coordonate::operator+(const coord3D& other) const {
     }
 
     return result;
+}
+
+bool coord3D::operator==(const coord3D& other) const {
+    return x == other.x && y == other.y && z == other.z;
 }

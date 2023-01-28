@@ -6,6 +6,9 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_gpu.h>
 
+struct World; // to fix a circular dependency
+struct Texture;
+
 #include <texture.hpp>
 #include <world.hpp>
 #include <projection_grid.hpp>

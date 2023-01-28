@@ -1,6 +1,8 @@
 #ifndef PHYSICS_HPP
 #define PHYSICS_HPP
 
+class Multithreaded_Event_Handler;
+
 #include <multithreaded_event_handler.hpp>
 #include <world.hpp>
 #include <deque>
@@ -14,15 +16,29 @@ private:
 
     const Uint64 tick_delay = 50;
     SDL_Thread* thread;
-    std::mutex mutex;
-public:
+    std::mutex queue_mutex;
+
+    
+
     bool running;
-    PhysicsEngine();
+
+    World* world;
+    Multithreaded_Event_Handler* event_handler;
+
+public:
+    bool alive;
+    std::mutex world_mutex;
+    void toggle_running() { running = !running; }
+    bool is_running() const { return running; }
+
+    PhysicsEngine(World* world, Multithreaded_Event_Handler* event_handler);
     ~PhysicsEngine();
 
     void tick();
     void add_event(PhysicsEvent* event);
+    void add_event(int id, void* data); // for special events, like chunk checking
 
+    void clear_events();
 };
 
 int EngineThread(void* arg);
@@ -50,7 +66,17 @@ public:
     void execute();
     bool operator==(const PhysicsEvent* other) const;
     block_coordonate get_coord() const { return coord; }
-    friend class PhysicsEngine; // temporary for debugging
+};
+
+// checks a chunk that has been modified for water to eventually spread to empty blocks
+class PhysicsEventWaterCheckChunk : public PhysicsEvent {
+private:
+    chunk_coordonate chunk;
+public:
+    PhysicsEventWaterCheckChunk(World* world, PhysicsEngine* engine, Multithreaded_Event_Handler* event_handler, chunk_coordonate chunk) : PhysicsEvent(world, engine, event_handler, PHYSICS_EVENT_WATER_CHECK_CHUNK), chunk(chunk) {}
+    void execute();
+    bool operator==(const PhysicsEvent* other) const;
+    chunk_coordonate get_chunk() const { return chunk; }
 };
 
 #endif

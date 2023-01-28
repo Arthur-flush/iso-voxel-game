@@ -4,7 +4,11 @@
 #include <queue>
 
 #include <SDL2/SDL.h>
+
+struct Render_Engine; // to fix a circular dependency
+
 #include <render_engine.hpp>
+#include <physics.hpp>
 
 // "scale" must be given as a float
 #define GAME_EVENT_NEWSCALE                  0
@@ -51,6 +55,7 @@ int NFS_operations(void *);
 
 struct game_event_aditional_data
 {
+    game_event_aditional_data() : scale(0), target({0,0}), blockid(0) {}
     float scale;
     pixel_coord target;
 
@@ -64,6 +69,7 @@ struct game_event_aditional_data
 
 struct game_event
 {
+    game_event() : id(-1) {}
     int id;
     game_event_aditional_data data;
 };
@@ -74,6 +80,8 @@ class Multithreaded_Event_Handler
         friend int SecondaryThread_operations(void*);
         friend int NFS_operations(void*);
         Render_Engine &RE;
+        PhysicsEngine* PE;
+
         std::queue<game_event> event_queue;
 
         SDL_cond *new_frame_to_render;
@@ -89,6 +97,8 @@ class Multithreaded_Event_Handler
     public :
         Multithreaded_Event_Handler(Render_Engine&);
         ~Multithreaded_Event_Handler();
+
+        void SetPhysicsEngine(PhysicsEngine* PE) { this->PE = PE; }
 
         bool game_is_running;
         SDL_mutex *init_cond;

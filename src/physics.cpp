@@ -11,6 +11,7 @@ void PhysicsEventWater::execute() {
         return;
     }
 
+    // engine->world_mutex.lock();
     for (int x = -1; x <= 1; x++) {
         for (int y = -1; y <= 1; y++) {
             if (x == 0 && y == 0) continue; // skip self
@@ -48,7 +49,12 @@ void PhysicsEventWater::execute() {
         PhysicsEventWater* event = new PhysicsEventWater(world, engine, event_handler, neighbour);
         engine->add_event(event);
         }
+    
+    // engine->world_mutex.unlock();
 }
+
+
+
 
 bool PhysicsEventWater::operator==(const PhysicsEvent* event) const {
     if (event->get_id() != PHYSICS_EVENT_WATER) return false;
@@ -56,20 +62,156 @@ bool PhysicsEventWater::operator==(const PhysicsEvent* event) const {
     return coord == event_cast->get_coord();
 }
 
+bool PhysicsEventWaterCheckChunk::operator==(const PhysicsEvent* other) const { // checks if the event has the same type and chunk coord
+    if (other->get_id() != PHYSICS_EVENT_WATER) return false;
+    const PhysicsEventWaterCheckChunk* other_cast = static_cast<const PhysicsEventWaterCheckChunk*>(other);
+    return chunk == other_cast->get_chunk();
+}
 
+bool HasNeighbourWithID(const World* world, const block_coordonate& coord, const int id) {
+    for (int x = -1; x <= 1; x++) {
+        for (int y = -1; y <= 1; y++) {
+            if (x == 0 && y == 0) continue; // skip self
+            if (x != 0 && y != 0) continue; // skip diagonals
+
+            block_coordonate neighbour = coord + coord3D({x, y, 0});
+
+            if (
+                // check if neighbour is in world
+                neighbour.chunk.x >= 0 && neighbour.chunk.x <= world->max_chunk_coord.x &&
+                neighbour.chunk.y >= 0 && neighbour.chunk.y <= world->max_chunk_coord.y &&
+
+                // check if neighbour is empty
+                world->chunks[neighbour.chunk.x][neighbour.chunk.y][neighbour.chunk.z].blocks[neighbour.x][neighbour.y][neighbour.z].id == id
+                ) {
+                return true;
+            }
+
+        }
+    }
+    // check {0, 0, -1}
+    block_coordonate neighbour = coord + coord3D({0, 0, -1});
+    if (
+        neighbour.chunk.z >= 0 && neighbour.chunk.z < world->max_chunk_coord.z &&
+        world->chunks[neighbour.chunk.x][neighbour.chunk.y][neighbour.chunk.z].blocks[neighbour.x][neighbour.y][neighbour.z].id == id
+        ) {
+        return true;
+    }
+    return false;
+}
+
+void PhysicsEventWaterCheckChunk::execute() {
+    // engine->world_mutex.lock();
+    if (world->chunks[chunk.x][chunk.y][chunk.z].compress_value == CHUNK_NON_UNIFORM) {
+        for (int x = 0; x < CHUNK_SIZE; x++) {
+            for (int y = 0; y < CHUNK_SIZE; y++) {
+                for (int z = 0; z < CHUNK_SIZE; z++) {
+                    if (world->chunks[chunk.x][chunk.y][chunk.z].blocks[x][y][z].id == BLOCK_WATER) {
+                        
+                        if (HasNeighbourWithID(world, block_coordonate({x, y, z, chunk}), BLOCK_EMPTY)) {
+                            PhysicsEventWater* event = new PhysicsEventWater(world, engine, event_handler, block_coordonate({x, y, z, chunk}));
+                            engine->add_event(event);
+                        }
+                    }
+                }
+            }
+        }
+
+        // check for water in the first blocks of neighbouring chunks
+        for (int a = 0; a < CHUNK_SIZE; a++) { // iterate over the face of the chunk that is directly adjacent to the chunk we are checking
+            for (int b = 0; b < CHUNK_SIZE; b++) {
+                // check chunk above
+                if (chunk.z < world->max_chunk_coord.z) {
+                    if (world->chunks[chunk.x][chunk.y][chunk.z + 1].blocks[a][b][0].id == BLOCK_WATER) {
+                        PhysicsEventWater* event = new PhysicsEventWater(world, engine, event_handler, block_coordonate({a, b, 0, {chunk.x, chunk.y, chunk.z + 1}}));
+                        engine->add_event(event);
+                    }
+                }
+                // check chunk below
+                if (chunk.z > 0) {
+                    if (world->chunks[chunk.x][chunk.y][chunk.z - 1].blocks[a][b][CHUNK_SIZE - 1].id == BLOCK_WATER) {
+                        PhysicsEventWater* event = new PhysicsEventWater(world, engine, event_handler, block_coordonate({a, b, CHUNK_SIZE - 1, {chunk.x, chunk.y, chunk.z - 1}}));
+                        engine->add_event(event);
+                    }
+                }
+                // check chunk to the right
+                if (chunk.x < world->max_chunk_coord.x) {
+                    if (world->chunks[chunk.x + 1][chunk.y][chunk.z].blocks[0][a][b].id == BLOCK_WATER) {
+                        PhysicsEventWater* event = new PhysicsEventWater(world, engine, event_handler, block_coordonate({0, a, b, {chunk.x + 1, chunk.y, chunk.z}}));
+                        engine->add_event(event);
+                    }
+                }
+                // check chunk to the left
+                if (chunk.x > 0) {
+                    if (world->chunks[chunk.x - 1][chunk.y][chunk.z].blocks[CHUNK_SIZE - 1][a][b].id == BLOCK_WATER) {
+                        PhysicsEventWater* event = new PhysicsEventWater(world, engine, event_handler, block_coordonate({CHUNK_SIZE - 1, a, b, {chunk.x - 1, chunk.y, chunk.z}}));
+                        engine->add_event(event);
+                    }
+                }
+                // check chunk in front
+                if (chunk.y < world->max_chunk_coord.y) {
+                    if (world->chunks[chunk.x][chunk.y + 1][chunk.z].blocks[a][0][b].id == BLOCK_WATER) {
+                        PhysicsEventWater* event = new PhysicsEventWater(world, engine, event_handler, block_coordonate({a, 0, b, {chunk.x, chunk.y + 1, chunk.z}}));
+                        engine->add_event(event);
+                    }
+                }
+                // check chunk behind
+                if (chunk.y > 0) {
+                    if (world->chunks[chunk.x][chunk.y - 1][chunk.z].blocks[a][CHUNK_SIZE - 1][b].id == BLOCK_WATER) {
+                        PhysicsEventWater* event = new PhysicsEventWater(world, engine, event_handler, block_coordonate({a, CHUNK_SIZE - 1, b, {chunk.x, chunk.y - 1, chunk.z}}));
+                        engine->add_event(event);
+                    }
+                }
+            }
+        }
+    }
+    else if (world->chunks[chunk.x][chunk.y][chunk.z].compress_value == BLOCK_WATER) { // only iterate over the edges and the botom of the chunk
+        for (int a = 0; a < CHUNK_SIZE; a++) {
+            for (int b = 0; b < CHUNK_SIZE; b++) {
+                // check bottom
+                if (HasNeighbourWithID(world, block_coordonate({a, b, 0, chunk}), BLOCK_EMPTY)) {
+                    PhysicsEventWater* event = new PhysicsEventWater(world, engine, event_handler, block_coordonate({a, b, 0, chunk}));
+                    engine->add_event(event);
+                }
+                
+                // check edges
+                if (HasNeighbourWithID(world, block_coordonate({a, 0, b, chunk}), BLOCK_EMPTY)) {
+                    PhysicsEventWater* event = new PhysicsEventWater(world, engine, event_handler, block_coordonate({a, 0, b, chunk}));
+                    engine->add_event(event);
+                }
+                if (HasNeighbourWithID(world, block_coordonate({a, CHUNK_SIZE - 1, b, chunk}), BLOCK_EMPTY)) {
+                    PhysicsEventWater* event = new PhysicsEventWater(world, engine, event_handler, block_coordonate({a, CHUNK_SIZE - 1, b, chunk}));
+                    engine->add_event(event);
+                }
+                if (HasNeighbourWithID(world, block_coordonate({0, a, b, chunk}), BLOCK_EMPTY)) {
+                    PhysicsEventWater* event = new PhysicsEventWater(world, engine, event_handler, block_coordonate({0, a, b, chunk}));
+                    engine->add_event(event);
+                }
+                if (HasNeighbourWithID(world, block_coordonate({CHUNK_SIZE - 1, a, b, chunk}), BLOCK_EMPTY)) {
+                    PhysicsEventWater* event = new PhysicsEventWater(world, engine, event_handler, block_coordonate({CHUNK_SIZE - 1, a, b, chunk}));
+                    engine->add_event(event);
+                }
+            }
+        }
+    }
+    // engine->world_mutex.unlock();
+}
 
 PhysicsEngine::~PhysicsEngine() {
     while (!event_queue.empty()) {
         delete event_queue.front();
         event_queue.pop_front();
     }
+    running = false;
+    alive = false;
 }
 
 void PhysicsEngine::tick() {
     Uint64 start = Get_time_ms();
    
-    mutex.lock();
-    // std::cout << "mutex lock in tick" << std::endl;
+    // std::cout << "attempting to lock queue_mutex\n";
+    queue_mutex.lock();
+    // std::cout << "queue_mutex lock in tick" << std::endl;
 
     std::deque <PhysicsEvent*> event_queue_copy;
 
@@ -80,15 +222,20 @@ void PhysicsEngine::tick() {
     event_queue.clear();
 
 
-    // std::cout << "mutex unlock in tick" << std::endl;
-    mutex.unlock();
+    // std::cout << "queue_mutex unlock in tick" << std::endl;
+    queue_mutex.unlock();
 
-    
+    // std::cout << "attempting to lock world_mutex\n";
+    world_mutex.lock();
+    // std::cout << "world_mutex lock in tick" << std::endl;  
+    // std::cout << "executing " << event_queue_copy.size() << " events" << std::endl;
     while(!event_queue_copy.empty()) {
         event_queue_copy.front()->execute();
         delete event_queue_copy.front();
         event_queue_copy.pop_front();
     }
+    // std::cout << "world_mutex unlock in tick" << std::endl;
+    world_mutex.unlock();
 
     Uint64 end = Get_time_ms();
     Uint64 delta = end - start;
@@ -101,34 +248,9 @@ void PhysicsEngine::tick() {
 }
 
 void PhysicsEngine::add_event(PhysicsEvent* event) {
-    mutex.lock();
-
-    // int size = event_queue.size();
-    // if (size == 8) {
-    //     PhysicsEventWater* new_event_cast = static_cast<PhysicsEventWater*>(event);
-    //     std::cout << "new event: " << new_event_cast->coord.x << ", " << new_event_cast->coord.y << ", " << new_event_cast->coord.z << std::endl;
-        
-    //     std::cout << "current events:" << std::endl;
-    //     int i = 0;
-    //     for (auto event_in_queue : event_queue) {
-    //         PhysicsEventWater* event_cast = static_cast<PhysicsEventWater*>(event_in_queue);
-    //         std::cout << i << ": " << event_cast->coord.x << ", " << event_cast->coord.y << ", " << event_cast->coord.z << std::endl;
-    //         if (event_cast->coord == new_event_cast->coord) {
-    //             std::cout << "same event" << std::endl;
-    //             if (less_than(*event_cast, event)) {
-    //                 std::cout << "event_in_queue < event" << std::endl;
-    //             }
-    //             else if (less_than(*new_event_cast, event_in_queue)) {
-    //                 std::cout << "event < event_in_queue" << std::endl;
-    //             }
-    //             else {
-    //                 std::cout << "event == event_in_queue" << std::endl;
-    //             }
-    //         }
-            
-    //         i++;
-    //     }
-    // }
+    // std::cout << "attempting to lock queue_mutex\n";
+    queue_mutex.lock();
+    // std::cout << "queue_mutex lock in add_event" << std::endl;
 
     // check if event is already in queue
     auto it = std::find_if(event_queue.begin(), event_queue.end(), [event](PhysicsEvent* event_in_queue) {
@@ -145,18 +267,50 @@ void PhysicsEngine::add_event(PhysicsEvent* event) {
         // std::cout << "inserted event" << std::endl;
         event_queue.push_back(event);
     }
-    mutex.unlock();
+    // std::cout << "queue_mutex unlock in add_event" << std::endl;
+    queue_mutex.unlock();
+}
+
+void PhysicsEngine::add_event(int id, void* data) {
+    queue_mutex.lock();
+    switch (id) {
+        case PHYSICS_EVENT_WATER_CHECK_CHUNK: {
+            PhysicsEventWaterCheckChunk* event = new PhysicsEventWaterCheckChunk(world, this, event_handler, *(chunk_coordonate*)data);
+            event_queue.push_back(event);
+            break;
+        }
+        case PHYSICS_EVENT_WATER_CHECK_BLOCK: {
+            PhysicsEventWater* event = new PhysicsEventWater(world, this, event_handler, *(block_coordonate*)data);
+            event_queue.push_back(event);
+            break;
+        }
+    }
+    queue_mutex.unlock();
+}
+
+void PhysicsEngine::clear_events() {
+    queue_mutex.lock();
+    while (!event_queue.empty()) {
+        delete event_queue.front();
+        event_queue.pop_front();
+    }
+    queue_mutex.unlock();
 }
 
 int EngineThread(void* arg) {
     PhysicsEngine* engine = (PhysicsEngine*)arg;
-    while (engine->running) {
-        engine->tick();
+    while (engine->alive) {
+        if (engine->is_running())
+            engine->tick();
+        else 
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
     return 0;
 }
 
-PhysicsEngine::PhysicsEngine() {
+PhysicsEngine::PhysicsEngine(World* world, Multithreaded_Event_Handler* event_handler) : world(world), event_handler(event_handler) {
     running = true;
+    alive = true;
     thread = SDL_CreateThread(EngineThread, "PhysicsEngine", this);
+
 }

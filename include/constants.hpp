@@ -108,6 +108,9 @@ tested floats exemple :
 #define BLOCK_GLASS_MAGENTA         248
 
 //////// PHYSICS EVENT IDs ////////
-#define PHYSICS_EVENT_WATER 0
+#define PHYSICS_EVENT_WATER             0
+#define PHYSICS_EVENT_WATER_CHECK_CHUNK 1
+#define PHYSICS_EVENT_WATER_CHECK_BLOCK 2
+
 
 #endif

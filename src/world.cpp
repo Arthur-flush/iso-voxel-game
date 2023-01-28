@@ -1,6 +1,7 @@
 #include <world.hpp>
+#include <vector>
 
-World::World(){chunks = NULL;};
+
 
 typedef chunk CHUNK;
 
@@ -445,6 +446,14 @@ bool World::modify_block(world_coordonate wcoord, int id)
     
     chunks[coord.chunk.x][coord.chunk.y][coord.chunk.z].blocks[coord.x][coord.y][coord.z].id = id;
 
+    if (id == BLOCK_EMPTY) {
+        physics_engine->add_event(PHYSICS_EVENT_WATER_CHECK_CHUNK, &coord.chunk);
+    }
+
+    if (id == BLOCK_WATER) {
+        physics_engine->add_event(PHYSICS_EVENT_WATER_CHECK_BLOCK, &coord);
+    }
+
     compress_chunk(coord.chunk.x, coord.chunk.y, coord.chunk.z);
 
     return true;
@@ -573,6 +582,10 @@ int World::load_from_file(const char* filename) {
     // std::cout << "max_chunk_coord.y = " << new_size.y << std::endl;
     // std::cout << "max_chunk_coord.z = " << new_size.z << std::endl;
 
+    // std::cout << "attempting to lock world mutex in load_from_file\n";
+    physics_engine->world_mutex.lock();
+    // std::cout << "world mutex lock in load_from_file" << std::endl;
+
     if(!chunks || new_size.x != max_chunk_coord.x || new_size.y != max_chunk_coord.y || new_size.z != max_chunk_coord.z)
     {
         free_chunks();
@@ -637,6 +650,8 @@ int World::load_from_file(const char* filename) {
         }
     }
 
+    // std::cout << "world mutex unlock in load_from_file" << std::endl;
+    physics_engine->world_mutex.unlock();
     delete[] buffer;
     fclose(file);
     return SAVE_ERROR_NONE;
