@@ -1,0 +1,40 @@
+
+- GENERAL -
+
+ALT + F4 : Quitt
+ALT + ENTER : Fullscreen / windowed
+ESC : Return to the last menu
+
+
+- CONSTRUCTION MODE -
+
+RIGHT CLICK         : Move camera
+SCROLL              : Zoom camera
+Q/F                 : Rotate camera
+SHIFT + SCROLL      : Change the maximum height visible
+PAGE UP/DOWN        : Change the maxumum height visible by 8 steps
+LEFT CLICK          : Pose current block
+A/E or LEFT/RIGHT   : Change current block
+0/1/2/3/4 or TAB    : Change structure type
+F                   : Toggle pipette tool
+MIDDLE CLICK or ESC : Reset current floor/wall/volume
+Z/S                 : Change hilight mode 
+CTRL + SCROLL       : Change wall/volume height
+UP / DOWN           : Change meteo
+F5                  : Quick save
+F9                  : Quick load
+X                   : Toggle HUD
+
+- DEBUG -
+
+R  : Refresh rendering
+P  : Refresh shader
+G  : Debug grid
+H  : Print debug infos
+F1 : Toggle Global Illumination
+F2 : Toggle Ambiant Occlusion
+F3 : Toggle Block Borders
+F4 : Toggle Shadows
+F6 : Toggle Bloom
+
+

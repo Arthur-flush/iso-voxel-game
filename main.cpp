@@ -1,5 +1,8 @@
 #include <game.hpp>
 
+Uint64 timems = 0;
+Uint64 timems_start = 0;
+
 void print_features()
 {
     GPU_RendererID test[32];
@@ -19,15 +22,13 @@ void print_features()
 
 int main(int argc, char *argv[])
 {
+    timems_start = Get_time_ms();
+
     system("cls");
 
     int statut = EXIT_FAILURE;
 
     SDL_Init(SDL_INIT_VIDEO);
-
-    GPU_SetDebugLevel(GPU_DEBUG_LEVEL_MAX);
-
-    GPU_SetRequiredFeatures(0);
 
     // Uint32 GPU_InitFlagEnum = GPU_INIT_DISABLE_VSYNC;
     // GPU_SetPreInitFlags(GPU_InitFlagEnum);
@@ -46,13 +47,32 @@ int main(int argc, char *argv[])
                                            GPU_DEFAULT_INIT_FLAGS);
 
     // GPU_Target *screen =  GPU_InitRenderer(GPU_RENDERER_OPENGL_4, 
-    //                                        800,
-    //                                        600,
+    //                                        1600,
+    //                                        900,
     //                                        GPU_DEFAULT_INIT_FLAGS);
 
     // GPU_SetFullscreen(true, false);
 
-    SDL_ShowCursor(SDL_DISABLE);
+
+    // SDL_ShowCursor(SDL_DISABLE);
+
+
+    GPU_Image *cursor_img = GPU_LoadImage("ressources/textures/ui/cursor.png");
+
+    if(cursor_img == NULL)
+    {
+        std::cout << "meeeeuuuuhhh";
+    }
+
+    SDL_Surface *surface =  GPU_CopySurfaceFromImage(cursor_img);
+    SDL_Cursor *cursor = SDL_CreateColorCursor(surface, 32, 32);
+    SDL_SetCursor(cursor);
+
+    GPU_FreeImage(cursor_img);
+
+    GPU_SetDebugLevel(GPU_DEBUG_LEVEL_MAX);
+
+    GPU_SetRequiredFeatures(0);
 
     if(screen)
     {

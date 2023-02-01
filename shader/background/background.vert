@@ -1,8 +1,10 @@
 #version 430
 
+layout (location = 1) uniform float Time;
 layout (location = 2) uniform int features;
 layout (location = 5) uniform ivec4 win_const;
-layout (location = 6) uniform float sprite_size;
+
+layout (location = 16) uniform sampler2D iChannel0;
 
 in vec3 gpu_Vertex;
 in vec2 gpu_TexCoord;

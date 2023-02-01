@@ -189,10 +189,14 @@ void Multithreaded_Event_Handler::handle()
 
         case GAME_EVENT_SINGLE_BLOCK_MOD :
         {
+            int maxz = 0;
+
             if(RE.highlight_wcoord2.x == -1)
             {
                 if(RE.world.modify_block(event.data.wcoord1, event.data.blockid))
                 {
+                    maxz = event.data.wcoord1.z;
+
                     block_coordonate bc = RE.world.convert_wcoord(event.data.wcoord1.x, event.data.wcoord1.y, event.data.wcoord1.z);
 
                     RE.refresh_block_visible(bc.chunk, bc.x, bc.y, bc.z);
@@ -230,13 +234,15 @@ void Multithreaded_Event_Handler::handle()
                     zend = RE.highlight_wcoord.z;
                 }
 
+                maxz = zend;
+
                 // Uint64 start = Get_time_ms();
                 
                 Uint64 estimate_itcounter = (Uint64)(yend-ybeg+1)*(Uint64)(xend-xbeg+1)*(Uint64)(zend-zbeg+1);
 
                 // Uint64 itcounter = 0;
 
-                if(estimate_itcounter < 30000)
+                if(estimate_itcounter < 15000)
                 {
                     for(int y = ybeg; y <= yend; y ++)
                     {
@@ -291,15 +297,15 @@ void Multithreaded_Event_Handler::handle()
 
                         int chunk_xbeg = (xbeg + CHUNK_SIZE - (xbeg%CHUNK_SIZE))/CHUNK_SIZE;
                         chunk_xbeg = xbeg%CHUNK_SIZE ? chunk_xbeg : xbeg/CHUNK_SIZE;
-                        int chunk_xend = (xend - (xend%CHUNK_SIZE))/CHUNK_SIZE;
+                        int chunk_xend = ((xend) - ((xend)%CHUNK_SIZE))/CHUNK_SIZE;
 
                         int chunk_ybeg = (ybeg + CHUNK_SIZE - (ybeg%CHUNK_SIZE))/CHUNK_SIZE;
                         chunk_ybeg = ybeg%CHUNK_SIZE ? chunk_ybeg : ybeg/CHUNK_SIZE;
-                        int chunk_yend = (yend - (yend%CHUNK_SIZE))/CHUNK_SIZE;
+                        int chunk_yend = ((yend) - ((yend)%CHUNK_SIZE))/CHUNK_SIZE;
 
                         int chunk_zbeg = (zbeg + CHUNK_SIZE - (zbeg%CHUNK_SIZE))/CHUNK_SIZE;
                         chunk_zbeg = zbeg%CHUNK_SIZE ? chunk_zbeg : zbeg/CHUNK_SIZE;
-                        int chunk_zend = (zend - (zend%CHUNK_SIZE))/CHUNK_SIZE;
+                        int chunk_zend = ((zend) - ((zend)%CHUNK_SIZE))/CHUNK_SIZE;
 
                         int chunk_xbeg_wvp = chunk_xbeg;
                         int chunk_xend_wvp = chunk_xend;
@@ -390,6 +396,17 @@ void Multithreaded_Event_Handler::handle()
             }
 
             RE.projection_grid.refresh_all_identical_line(); 
+
+            RE.world.find_highest_nonemptychunk();
+
+            if(maxz > RE.world.highest_nonemptychunk*CHUNK_SIZE)
+            {
+                if(RE.max_height_render < (RE.world.highest_nonemptychunk+1)*CHUNK_SIZE)
+                {
+                    RE.max_height_render = (RE.world.highest_nonemptychunk+1)*CHUNK_SIZE;
+                }
+            }
+
         }
             break;
 

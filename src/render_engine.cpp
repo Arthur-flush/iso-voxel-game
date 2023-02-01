@@ -22,7 +22,7 @@ Render_Engine::Render_Engine(struct World& _world) : world{_world}
     shader.load("shader/vertex.vert", "shader/fragment.frag", &geom);
     world_render_shader.load("shader/opaque_world.vert", "shader/opaque_world.frag", NULL);
     post_process_shader.load("shader/post process.vert", "shader/post process.frag", NULL);
-    background_shader.load("shader/background.vert", "shader/background.frag", NULL);
+    // background_shader.load("shader/background.vert", "shader/background.frag", NULL);
 
     shader_features = 0;
     shader_features ^= SFEATURE_GLOBAL_ILLUMINATION;
@@ -483,7 +483,7 @@ void Render_Engine::render_highlighted_blocks()
         GPU_SetUniformi(8, BLOCK_TEXTURE_SIZE);
 
 
-        if(highlight_type >= HIGHLIGHT_FLOOR && highlight_wcoord2.x != -1 && highlight_wcoord.x != -1)
+        if(highlight_type >= HIGHLIGHT_FLOOR && highlight_wcoord2.x != -1 && highlight_wcoord.x != -1 && highlight_type != HIGHLIGHT_PIPETTE)
         {
             int xbeg = highlight_wcoord.x;
             int xend = highlight_wcoord2.x;
@@ -525,9 +525,20 @@ void Render_Engine::render_highlighted_blocks()
             for(int y = ybeg; y <= yend; y ++)
             for(int z = zbeg; z <= zend; z ++)
             {
-                if(highlight_type == HIGHLIGHT_VOLUME && 
-                   (x != xend && y != yend && z != zend))
-                    continue;
+                // if(highlight_type == HIGHLIGHT_VOLUME && 
+                //    (x != xend && y != yend && z != zend))
+                //     continue;
+
+                if(highlight_type == HIGHLIGHT_VOLUME)
+                {
+                    int condx = (x != xend && x != xbeg) ? 1 : 0;
+                    int condy = (y != yend && y != ybeg) ? 1 : 0;
+                    int condz = (z != zend && z != zbeg) ? 1 : 0;
+                    int cond = condx + condy + condz;
+
+                    if(cond > 1)
+                        continue;
+                }
 
                 int xspos = target.x + block_onscreen_half*(x - y - 1);
                 if(xspos < -block_onscreen_half || xspos > screen->w+block_onscreen_half)
@@ -690,27 +701,30 @@ void Render_Engine::render_frame()
     GPU_ClearColor(screen2, {105, 156, 203, 255});
     GPU_ClearColor(screen3, {105, 156, 203, 255});
     GPU_ClearColor(screen,  {105, 156, 203, 255});
+    // GPU_Clear(background);
     // GPU_ClearColor(depth_fbo, {0, 0, 0, 255});
 
     /****************** GENERATING BACKGROUND **************************/
-    background_shader.activate();
+    background_shader->activate();
 
-    // GPU_SetUniformf(1, timems);
+    GPU_SetUniformf(1, timems);
     int win_const[4] = {screen->w, screen->h, target.x, target.y};
     GPU_SetUniformiv(5, 4, 1, win_const);
+    GPU_SetUniformui(17, background_shader_data + (world.world_view_position<<30));
 
-    // GPU_SetShaderImage(Textures[BACKGROUND_SUNSET]->ptr, 6, 7); // donne iChannel0
-    // GPU_Blit(background_image, NULL, screen, 0, 0); // draw une image de taille identiques à lécran
-    // GPU_Blit(background_image, NULL, screen3, 0, 0);
-    background_shader.deactivate();
+    GPU_SetShaderImage(Textures[BACKGROUND_SUNSET]->ptr, 16, 8); // donne iChannel0
+
+    GPU_BlitRect(Textures[BACKGROUND_SUNSET]->ptr, NULL, background, NULL);
+
+    background_shader->deactivate();
     /*******************************************************************/
+    // GPU_Blit(background_image, NULL, screen, 0, 0); // draw une image de taille identiques à lécran
+    GPU_Blit(background_image, NULL, screen2, 0, 0); 
+    GPU_Blit(background_image, NULL, screen3, 0, 0);    
 
 
     /****************** SETTING SHADER UNIFORMS ************************/
     shader.activate();
-
-    timems = Get_time_ms();
-    timems -= 1672675701720;
 
     GPU_SetUniformf(1, timems/7500.0);
     GPU_SetUniformi(2, shader_features);
@@ -730,9 +744,9 @@ void Render_Engine::render_frame()
     render_world();
 
     shader.activate();
-    if(window.scale > PANORAMA_SCALE_THRESHOLD && *state == STATE_MAIN)
+    if(window.scale > PANORAMA_SCALE_THRESHOLD && *state == STATE_CONSTRUCTION)
     {
-        if(highlight_mode)
+        if(highlight_mode || highlight_type == HIGHLIGHT_PIPETTE)
             highlight_block2();
 
         render_highlighted_blocks();    
@@ -742,10 +756,10 @@ void Render_Engine::render_frame()
     GPU_Blit(final_world_render, NULL, screen3, 0, 0);
     
     // GPU_SetDepthFunction(RE.screen2, GPU_NEVER);
-    GPU_SetDepthWrite(screen3, false);
+    // GPU_SetDepthWrite(screen3, false);
     shader.activate();
     render_transparent_world();
-    GPU_SetDepthWrite(screen3, true);
+    // GPU_SetDepthWrite(screen3, true);
     /*******************************************************************/
 
     /****************** POST PROCESS SHADER ****************************/
@@ -755,9 +769,7 @@ void Render_Engine::render_frame()
     post_process_shader.deactivate();
     /*******************************************************************/
 
-    // world_render_shader.activate();
-    GPU_Blit(depth_fbo_image, NULL, screen, 0, 0);
-    // world_render_shader.deactivate();
+    // GPU_Blit(depth_fbo_image, NULL, screen, 0, 0);
 
     // GPU_Flip(screen);
     SDL_CondWait(GameEvent->secondary_frame_op_finish, GameEvent->init_cond);

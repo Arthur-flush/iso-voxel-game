@@ -30,16 +30,18 @@ UI_tile::UI_tile(const char* filename, int acol, int aline, int aid,
 
     scalex = (float)(sizex)/dest.w;
     scaley = (float)(sizey)/dest.h;
+}
 
-    // GPU_SetColor(atlas.ptr, {0, 0, 0, 0});
+void UI_tile::change_size_norm(float sizex, float sizey)
+{
+    scalex = (float)(sizex)/dest.w;
+    scaley = (float)(sizey)/dest.h;
+}
 
-    // std::cout << filename << "\n";
-
-    // std::cout 
-    // << scalex << " "
-    // << scaley << " "
-    // << dest.x << " "
-    // << dest.y << "\n";
+void UI_tile::change_position_norm(float x, float y)
+{
+    dest.x = x;
+    dest.y = y;
 }
 
 bool UI_tile::is_mouse_over()
@@ -59,13 +61,10 @@ void UI_tile::change_atlas_id(int newaid)
     atlas.set_atlas_srcrect(atlas_col, atlas_line, atlas_id);
 }
 
-bool UI_tile::render(GPU_Target *screen)
+void UI_tile::render(GPU_Target *screen)
 {
     if(atlas.ptr)
     {
         GPU_BlitScale(atlas.ptr, &atlas.src, screen, dest.x, dest.y, scalex, scaley);
-        return is_mouse_over();
     }
-
-    return false;
 }

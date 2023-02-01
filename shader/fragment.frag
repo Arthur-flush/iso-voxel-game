@@ -118,6 +118,9 @@ float Ambiant_Oclusion(vec4 pixel_norm, vec4 pixel_AO)
         ){
             PixelTint *= 1-pixel_AO.g*0.5;
         }
+        
+        if(PixelTint != 1.0)
+            return PixelTint;
         else
         if(
             ((render_flagst&4) == 4 && texCoord.y < 0.15) || // corner top 

@@ -1,9 +1,11 @@
 #version 430
 
 #define SFEATURE_BLOOM 16
+#define SFEATURE_GRID  32
 
 layout (location = 2) uniform int features;
 layout (location = 5) uniform ivec4 win_const;
+layout (location = 6) uniform float sprite_size;
 
 in vec2 texCoord;
 uniform sampler2D iChannel0;
@@ -57,21 +59,57 @@ void bloom()
     */
 }
 
-void main (void)
+// void is_near(vec2 value, vec2 target, float nprecision)
+// {
+//     if(value.x > target.x-nprecision && value.x < target.x-nprecision)
+// }
+
+void isometric_grid()
 {
-    // vec2 pixel_size = vec2(1.0/1920, 1.0/1080);
-    // if((texCoord.x > 0.5-pixel_size.x && texCoord.x < 0.5+pixel_size.x) ||
-    //    (texCoord.y > 0.5-pixel_size.y && texCoord.y < 0.5+pixel_size.y))
+    vec2 pixel_size = vec2(1.0/1920, 1.0/1080);
+
+    if((texCoord.x > 0.5-pixel_size.x && texCoord.x < 0.5+pixel_size.x) ||
+       (texCoord.y > 0.5-pixel_size.y && texCoord.y < 0.5+pixel_size.y))
+    {
+        fragColor = vec4(1.0, 1.0, 1.0, 1.0);
+        return;
+    }
+
+
+    // float face_with = sprite_size/2.0;
+    // float face_height = sprite_size/4.0;
+
+    // // y = 0.5x
+    // // y/x = 0.5
+    // // x/y = 2
+
+    // vec2 norm_coord = vec2(texCoord.x*float(win_const.x), texCoord.y*float(win_const.y));
+
+    // float test = norm_coord.y/norm_coord.x;
+
+    // // if(test > 1 || test < 3)
+    // if(test != 0.0)
     // {
-    //     fragColor = vec4(1.0, 1.0, 1.0, 1.0);
+    //     fragColor = vec4(1.0, 1.0, 0.0, 1.0);
     //     return;
     // }
+
+    // fragColor = vec4(test, test, test, 1.0);
+}
+
+void main (void)
+{
 
     vec4 pixel = texture(iChannel0, texCoord);
     fragColor = pixel;
 
     if((features & SFEATURE_BLOOM) != 0)
         bloom();
+
+    if((features & SFEATURE_GRID) != 0)
+        isometric_grid();
+
+    // fragColor.rgb -= mod(gl_FragCoord.y, 2.0) < 1.0 ? 0.25 : 0.0;
 
     gl_FragDepth = 0;
 }

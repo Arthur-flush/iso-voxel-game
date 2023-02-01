@@ -6,26 +6,33 @@
 #include <math.h>
 #include <chrono>
 #include <list>
-#include <cstring>
+#include <algorithm>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_gpu.h>
 
-#include <UI_engine.hpp>
+#include <ui_engine.hpp>
 #include <render_engine.hpp>
 #include <multithreaded_event_handler.hpp>
+#include <meteo.hpp>
 
 extern pixel_coord mouse;
 
-struct world_extras {
+extern Uint64 timems_start;
+extern Uint64 timems;
+
+struct world_extras
+{
     pixel_coord camera_pos;
     float scale;
     int world_view_position;
+    int meteoid;
 };
 
 struct world_extras_select {
     bool camera_pos;
     bool scale;
     bool world_view_position;
+    bool meteo;
 
     world_extras_select(bool value = false) {
         memset(this, (int)value, sizeof(*this)); // set all to value, cursed level 7/10
@@ -44,10 +51,17 @@ class Game
 
         // Uint16 Current_block;
         std::list<int> unlocked_blocks;
+        std::list<int> unlocked_meteo;
         std::list<int>::iterator Current_block;
+        std::list<int>::iterator Current_meteo;
+        int Current_HL_type;
 
         std::string New_world_name;
         std::string Current_world_name;
+
+        std::string Menu_hl_name;
+
+        bool Show_HUD;
 
         World world;
         UI_Engine UI;
@@ -64,7 +78,11 @@ class Game
         // only set it to false if you want fast loading and know what you are doing, true by default
         // if world_extras is not null, it will be filled with the world_extras from the corresponding file
         // if apply_extras is true, the world_extras will be applied to the world
-        int load_world(std::string filename, bool new_size = true, bool recenter_camera = false, world_extras* extras = nullptr, world_extras_select extras_select = world_extras_select(true));
+        int load_world(std::string filename, 
+                       bool new_size = true, 
+                       bool recenter_camera = false, 
+                       world_extras* extras = nullptr, 
+                       world_extras_select extras_select = world_extras_select(false));
 
         // saves a world extra given as a parameter to a file
         int save_world_extras(std::string filename, world_extras& extras);
@@ -73,7 +91,8 @@ class Game
         int load_world_extras(std::string filename, world_extras* extras);
 
         // applies a world_extras to the world / Render Engine / whatever else
-        void world_extras_apply(world_extras& extras, world_extras_select extras_select = world_extras_select(true));
+        void world_extras_apply(world_extras& extras,
+                                world_extras_select extras_select = world_extras_select(true));
 
         // fills a world_extras with the corresponding data
         void world_extras_fill(world_extras& extras);
@@ -81,8 +100,9 @@ class Game
         void refresh_world_render();
         void refresh_world_render_fast();
         
-        void input_mainmenu();
-        void input_maingame();
+        void input_main_menu();
+        void input_world_selection();
+        void input_construction();
         void input();
 
 

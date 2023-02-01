@@ -49,7 +49,7 @@ void Render_Engine::highlight_block2()
 
     coord3D csb = select_screen_block_coord(sb);
 
-    if(highlight_mode == HIGHLIGHT_MOD_DELETE || highlight_mode == HIGHLIGHT_MOD_REPLACE)
+    if(highlight_mode == HIGHLIGHT_MOD_DELETE || highlight_mode == HIGHLIGHT_MOD_REPLACE || highlight_type == HIGHLIGHT_PIPETTE)
     {
         screen_block *sb_top = projection_grid.get_pos_world(iguess.x, iguess.y, 1);
         screen_block *sb_toplr = NULL;
@@ -72,7 +72,7 @@ void Render_Engine::highlight_block2()
             highlight_wcoord = csb_top;
     }
 
-    if(highlight_mode == HIGHLIGHT_MOD_PLACE)
+    if(highlight_mode == HIGHLIGHT_MOD_PLACE && highlight_type != HIGHLIGHT_PIPETTE)
     {
         screen_block *sb_top = projection_grid.get_pos_world(iguess.x, iguess.y, 1);
         screen_block *sb_toplr = NULL;
@@ -121,7 +121,7 @@ void Render_Engine::highlight_block2()
         }
     }
 
-    if(highlight_mode == HIGHLIGHT_MOD_PLACE_ALT)
+    if(highlight_mode == HIGHLIGHT_MOD_PLACE_ALT && highlight_type != HIGHLIGHT_PIPETTE)
     {
         screen_block *sb_top = projection_grid.get_pos_world(iguess.x, iguess.y, 1);
         screen_block *sb_toplr = NULL;
@@ -173,20 +173,23 @@ void Render_Engine::highlight_block2()
         highlight_wcoord = {iguess.x+highlight_wcoord2.z, iguess.y+highlight_wcoord2.z, highlight_wcoord2.z};
     }
 
-    if(highlight_type == HIGHLIGHT_WALL_X && highlight_wcoord2.z != -1)
+    if(highlight_type == HIGHLIGHT_WALL && highlight_wcoord2.z != -1)
     {
-        int diff = highlight_wcoord2.x - guess.x;
+        int x = guess.x+highlight_wcoord2.z;
+        int y = guess.y+highlight_wcoord2.z;
 
-        highlight_wcoord = {iguess.x+diff, iguess.y+diff, diff};
+        int diffx = highlight_wcoord2.x - x;
+        int diffy = highlight_wcoord2.y - y;
+
+        if(abs(diffx) < abs(diffy))
+        {
+            highlight_wcoord = {highlight_wcoord2.x, highlight_wcoord2.y-diffy, height_volume_tool};
+        }
+        else
+        {
+            highlight_wcoord = {highlight_wcoord2.x-diffx, highlight_wcoord2.y, height_volume_tool};
+        }
     }
-
-    if(highlight_type == HIGHLIGHT_WALL_Y && highlight_wcoord2.z != -1)
-    {
-        int diff = highlight_wcoord2.y - guess.y;
-
-        highlight_wcoord = {iguess.x+diff, iguess.y+diff, diff};
-    }
-
 
     if(highlight_type == HIGHLIGHT_VOLUME && highlight_wcoord2.z != -1)
     {
@@ -209,9 +212,18 @@ void Render_Engine::highlight_block2()
         set_in_interval(highlight_wcoord.z, 0, world.max_block_coord.z-1);
     // }
 
-    if(highlight_type == HIGHLIGHT_VOLUME && highlight_wcoord2.z == -1)
+    // if(highlight_type == HIGHLIGHT_VOLUME && highlight_wcoord2.z == -1)
+    // {
+    //     height_volume_tool = highlight_wcoord.z;
+    // }
+    // if((highlight_type == HIGHLIGHT_WALL_Y || highlight_type == HIGHLIGHT_WALL_X) && highlight_wcoord2.z == -1)
+    // {
+    //     height_volume_tool = highlight_wcoord.z;
+    // }
+
+    if(height_volume_tool == -1)
     {
-        height_volume_tool = highlight_wcoord.z;
+        height_volume_tool = highlight_wcoord2.z;
     }
 }
 
@@ -512,9 +524,9 @@ void Render_Engine::refresh_line_shadows(coord3D beg, coord3D end)
 
     chunk_coordonate pgcoord;
 
-    for(int x = xbeg; x <= xend; x ++)
-    for(int y = ybeg; y <= yend; y ++)
-    for(int z = zbeg; z <= zend; z ++)
+    for(int x = xbeg-1; x <= xend+1; x ++)
+    for(int y = ybeg-1; y <= yend+1; y ++)
+    for(int z = zbeg-1; z <= zend+1; z ++)
     {
         int x2 = x;
         int y2 = y;

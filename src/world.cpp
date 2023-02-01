@@ -347,6 +347,9 @@ Uint32 World::shadow_caster_presence(world_coordonate start)
     if(start.x > max_block_coord.x || start.y > max_block_coord.y || start.z > max_block_coord.z)
         return 0;
 
+    if(start.x < 0 || start.y < 0 || start.z < 0)
+        return 0;
+
     struct chunk* c;
     block_coordonate bc = convert_wcoord(start.x, start.y, start.z);
     Uint16 oid = BLOCK_EMPTY;

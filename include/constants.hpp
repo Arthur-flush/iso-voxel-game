@@ -3,7 +3,15 @@
 
 #include <iostream>
 
-#define MAIN_GAME_VERSION "0.10.3"
+const std::string TITLE = "ISOMETRIC VOXEL";
+const std::string VERSION = "dev 0.11.3";
+
+const std::string TXT_MAIN_MENU_QUIT = "QUIT";
+const std::string TXT_MAIN_MENU_PLAY = "BUILD";
+
+const std::string IDMENU_UNTITLED = "untitled";
+const std::string IDMENU_QUIT = "Q";
+const std::string IDMENU_PLAY = "P";
 
 //////// WINDOW DEFAULT CONSTANTS ////////
 #define DEFAULT_WINDOWS_W 1920
@@ -23,12 +31,13 @@ tested floats exemple :
 #define DEFAULT_SCALE              (long double)0.03125
 #define MAX_FLOAT_SCALE            (long double)8
 #define MIN_FLOAT_SCALE            (long double)0.0078125
-#define PANORAMA_SCALE_THRESHOLD   (long double)0.015625
+#define PANORAMA_SCALE_THRESHOLD   (long double)0.0 //0.015625
 
 //////// GAME STATE ////////
-#define STATE_QUIT 0
-#define STATE_MAIN 1
-#define STATE_MENU 2
+#define STATE_QUIT            0
+#define STATE_CONSTRUCTION    1
+#define STATE_WORLD_SELECTION 2
+#define STATE_MAIN_MENU       3
 
 //////// CHUNKS ////////
 #define CHUNK_SIZE 8
@@ -46,9 +55,9 @@ tested floats exemple :
 
 #define HIGHLIGHT_BLOCKS      1
 #define HIGHLIGHT_FLOOR       2
-#define HIGHLIGHT_WALL_Y      3
-#define HIGHLIGHT_WALL_X      4
-#define HIGHLIGHT_VOLUME      5
+#define HIGHLIGHT_WALL        3
+#define HIGHLIGHT_VOLUME      4
+#define HIGHLIGHT_PIPETTE     5
 
 //////// SHADER FEATURES ////////
 #define SFEATURE_GLOBAL_ILLUMINATION 1
@@ -56,6 +65,7 @@ tested floats exemple :
 #define SFEATURE_BLOCK_BORDERS       4
 #define SFEATURE_SHADOWS             8
 #define SFEATURE_BLOOM               16
+#define SFEATURE_GRID                32
 
 //////// RENDER FLAGS ////////
 #define SHADOW_TOP      128

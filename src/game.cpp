@@ -1,5 +1,4 @@
 #include <game.hpp>
-#include <cstdio>
 
 std::list<int>::iterator circularPrev(std::list<int> &l, std::list<int>::iterator &it)
 {
@@ -145,11 +144,14 @@ void Game::init(GPU_Target* _screen)
 {
     std::cout << "\n ##### ISO VOX #####\n";
 
-    state = STATE_MENU;
+    state = STATE_MAIN_MENU;
     Current_world_name = "/noworld";
 
-    UI.generate_tiles(STATE_MAIN, _screen->w, _screen->h);
-    UI.generate_tiles(STATE_MENU, _screen->w, _screen->h);
+    Show_HUD = true;
+    UI.generate_tiles(-1, _screen->w, _screen->h);
+    UI.generate_tiles(STATE_CONSTRUCTION, _screen->w, _screen->h);
+    UI.generate_tiles(STATE_WORLD_SELECTION, _screen->w, _screen->h);
+    UI.generate_tiles(STATE_MAIN_MENU, _screen->w, _screen->h);
 
     for(int i = TEXTURE_MIN_ID; i < TEXTURE_MAX_NUMBER; i++)
         RE.Textures[i] = std::make_shared<Texture>(i);
@@ -163,10 +165,17 @@ void Game::init(GPU_Target* _screen)
     while(!unlocked_blocks.empty())
         unlocked_blocks.pop_back();
 
-
+    unlocked_blocks.push_front(39);
+    unlocked_blocks.push_front(38);
+    unlocked_blocks.push_front(37);
+    unlocked_blocks.push_front(36);
     unlocked_blocks.push_front(35);
     unlocked_blocks.push_front(34);
     unlocked_blocks.push_front(33);
+    unlocked_blocks.push_front(32);
+    unlocked_blocks.push_front(31);
+    unlocked_blocks.push_front(BLOCK_SAND+6);
+    unlocked_blocks.push_front(BLOCK_SAND+5);
     unlocked_blocks.push_front(BLOCK_SAND+4);
     unlocked_blocks.push_front(BLOCK_SAND+3);
     unlocked_blocks.push_front(BLOCK_SAND+2);
@@ -187,9 +196,23 @@ void Game::init(GPU_Target* _screen)
 
     Current_block = unlocked_blocks.begin();
 
+
+    init_meteos();
+
+    unlocked_meteo.push_front(METEO_MAIN_MENU);
+    unlocked_meteo.push_front(METEO_ANIMATED_SKY);
+    unlocked_meteo.push_front(METEO_AZUR_AURORA);
+    unlocked_meteo.push_front(METEO_JADE_AURORA);
+    unlocked_meteo.push_front(METEO_SCARLET_AURORA);
+    unlocked_meteo.push_front(METEO_ORCHID_AURORA);
+    unlocked_meteo.push_front(METEO_NEBULA);
+    Current_meteo = unlocked_meteo.begin();
+
+    RE.set_global_illumination(meteos[METEO_MAIN_MENU].global_illumination);
+    RE.background_shader = meteos[METEO_MAIN_MENU].background_shader;
+
     // UI.set_ui_current_blocks(*circularPrev(unlocked_blocks, Current_block), *Current_block, *circularNext(unlocked_blocks, Current_block));
     UI.set_ui_current_blocks(unlocked_blocks, Current_block);
-
 
     GameEvent.add_nfs_event(NFS_OP_ALL_BLOCK_VISIBLE);
     GameEvent.add_nfs_event(NFS_OP_ALL_RENDER_FLAG);
@@ -200,27 +223,9 @@ void Game::init(GPU_Target* _screen)
     // float basic_gi[4] = {0.25, 0.25, 0.35, 0.60};
     RE.set_global_illumination(basic_gi);
 
-    GameEvent.add_event(GAME_EVENT_CAMERA_MOUVEMENT, (pixel_coord){RE.window.size.x/2, RE.window.size.y/2});
+    GameEvent.add_event(GAME_EVENT_CAMERA_MOUVEMENT, (pixel_coord){-50000, -50000});
 
     world.world_view_position = 0;
-}
-
-int Game::save_world_extras(std::string filename, world_extras& extras) {
-    std::string total_filename = "saves/";
-    total_filename.append(filename);
-    total_filename.append("/extras.bin");
-
-    FILE* file = fopen(total_filename.c_str(), "wb");
-
-    if(!file) {
-        return SAVE_ERROR_FILE_NOT_OPEN;
-    }
-
-    fwrite(&extras, sizeof(world_extras), 1, file);
-
-    fclose(file);
-
-    return SAVE_ERROR_NONE;
 }
 
 int Game::load_world_extras(std::string filename, world_extras* extras) {
@@ -241,7 +246,27 @@ int Game::load_world_extras(std::string filename, world_extras* extras) {
     return SAVE_ERROR_NONE;
 }
 
-void Game::world_extras_apply(world_extras& extras, world_extras_select extras_select) {
+int Game::save_world_extras(std::string filename, world_extras& extras)
+{
+    std::string total_filename = "saves/";
+    total_filename.append(filename);
+    total_filename.append("/extras.bin");
+
+    FILE* file = fopen(total_filename.c_str(), "wb");
+
+    if(!file) {
+        return SAVE_ERROR_FILE_NOT_OPEN;
+    }
+
+    fwrite(&extras, sizeof(world_extras), 1, file);
+
+    fclose(file);
+
+    return SAVE_ERROR_NONE;
+}
+
+void Game::world_extras_apply(world_extras& extras, world_extras_select extras_select)
+{
     if (extras_select.camera_pos)
         RE.target = extras.camera_pos; // peut être il faut d'autres trucs jsp
 
@@ -252,15 +277,28 @@ void Game::world_extras_apply(world_extras& extras, world_extras_select extras_s
     if (world.world_view_position != extras.world_view_position && extras_select.world_view_position) {
         world.world_view_position = extras.world_view_position;
     }
+
+    if (extras_select.meteo)
+    {
+        RE.set_global_illumination(meteos[extras.meteoid].global_illumination);
+        RE.background_shader = meteos[extras.meteoid].background_shader;
+        RE.background_shader_data = meteos[extras.meteoid].add_data;
+    }
 }
 
-void Game::world_extras_fill(world_extras& extras) {
+void Game::world_extras_fill(world_extras& extras)
+{
     extras.camera_pos = RE.target;
     extras.scale = RE.window.scale;
     extras.world_view_position = world.world_view_position;
+    extras.meteoid = *Current_meteo;
 }
 
-int Game::load_world(std::string filename, bool new_size, bool recenter_camera, world_extras* extras, world_extras_select extras_select)
+int Game::load_world(std::string filename, 
+               bool new_size, 
+               bool recenter_camera, 
+               world_extras* extras, 
+               world_extras_select extras_select)
 {
     // Uint64 start = Get_time_ms();
     // Uint64 end;
@@ -275,7 +313,6 @@ int Game::load_world(std::string filename, bool new_size, bool recenter_camera, 
 
     if(status == 0) 
     {
-
         if (extras != nullptr) {
             load_world_extras(filename, extras);
             if (extras_select) {
@@ -300,6 +337,8 @@ int Game::load_world(std::string filename, bool new_size, bool recenter_camera, 
         // world.compress_all_chunks();
 
         RE.max_height_render = world.max_block_coord.z;
+
+        RE.set_global_illumination_direction();
 
         if(recenter_camera)
         {
@@ -354,14 +393,17 @@ void Game::refresh_world_render_fast()
 
 void Game::input()
 {
-    if(state == STATE_MAIN)
-        input_maingame();
+    if(state == STATE_CONSTRUCTION)
+        input_construction();
     
-    else if(state == STATE_MENU)
-        input_mainmenu();
+    else if(state == STATE_WORLD_SELECTION)
+        input_world_selection();
+    
+    else if(state == STATE_MAIN_MENU)
+        input_main_menu();
 }
 
-void Game::input_mainmenu()
+void Game::input_main_menu()
 {
     SDL_Event event;
     SDL_Keymod km = SDL_GetModState();
@@ -393,7 +435,74 @@ void Game::input_mainmenu()
                         if(km & KMOD_LALT)
                             GPU_SetFullscreen(!GPU_GetFullscreen(), false);
                         else
-                            state = STATE_MAIN;
+                            state = STATE_WORLD_SELECTION;
+                        break;
+
+                    default : break;
+                }
+        
+        case SDL_MOUSEBUTTONDOWN :
+            if(event.button.button == SDL_BUTTON_LEFT)
+            {
+                if(Menu_hl_name == IDMENU_QUIT)
+                {
+                    state = STATE_QUIT;
+                }
+                
+                else if(Menu_hl_name == IDMENU_PLAY)
+                {
+                    state = STATE_WORLD_SELECTION;
+                }
+            }
+            break;
+
+        default : break;
+    }
+    }
+}
+
+void Game::input_world_selection()
+{
+    SDL_Event event;
+    SDL_Keymod km = SDL_GetModState();
+    SDL_GetMouseState((int*)&mouse.x, (int*)&mouse.y);
+
+    // std::cout << "\n" << New_world_name;
+
+    while(SDL_PollEvent(&event))
+    {
+    switch(event.key.type)
+    {
+        case SDL_KEYDOWN :
+            if(event.key.type == SDL_KEYDOWN && event.key.repeat == 0)
+                switch(event.key.keysym.sym)
+                {
+
+                    case SDLK_F4 : 
+
+                        if(km & KMOD_LALT)
+                        {
+                            state = STATE_QUIT;
+                        }
+
+                    case SDLK_ESCAPE :
+                    {
+                        SDL_ShowCursor(SDL_ENABLE);
+                        state = STATE_MAIN_MENU;
+
+                        // RE.set_global_illumination(meteos[METEO_MAIN_MENU].global_illumination);
+                        // RE.background_shader = meteos[METEO_MAIN_MENU].background_shader;
+                    }
+                        break;
+
+                    case SDLK_RETURN :
+                        if(km & KMOD_LALT)
+                            GPU_SetFullscreen(!GPU_GetFullscreen(), false);
+                        else
+                        {
+                            SDL_ShowCursor(SDL_DISABLE);
+                            state = STATE_CONSTRUCTION;
+                        }
                         break;
 
                     default : break;
@@ -403,39 +512,44 @@ void Game::input_mainmenu()
             if(event.button.button == SDL_BUTTON_LEFT)
             {
                 if(New_world_name[0] != '/')
-                    state = STATE_MAIN;
+                {
+                    SDL_ShowCursor(SDL_DISABLE);
+                    state = STATE_CONSTRUCTION;
+                }
             }
             break;
         
-case SDL_MOUSEMOTION :
-    // New_world_name
-    // Current_world_name
-    
-    // std::cout << New_world_name << '\n';
-
-    if(New_world_name != Current_world_name && New_world_name[0] != '/')
-    {
-        // && New_world_name != "/noworld"
-        if(!GameEvent.is_NFS_reading_to_wpg)
-        {
-            RE.highlight_mode = HIGHLIGHT_MOD_NONE;
-            RE.highlight_type = HIGHLIGHT_BLOCKS;
-            UI.set_ui_hl_type(RE.highlight_mode);
-            UI.set_ui_hl_mode(RE.highlight_type);
-
-            RE.highlight_wcoord = {-1, -1, -1};
-            RE.highlight_wcoord2 = {-1, -1, -1};
-
+        case SDL_MOUSEMOTION :
+            // New_world_name
+            // Current_world_name
             
-            world_extras_select wes(false);
-            wes.world_view_position = true;
-            load_world(New_world_name, true, true, nullptr, wes);
-            
+            // std::cout << New_world_name << '\n';
 
+            if(New_world_name != Current_world_name && New_world_name[0] != '/')
+            {
+                // && New_world_name != "/noworld"
+                if(!GameEvent.is_NFS_reading_to_wpg)
+                {
 
-            Current_world_name = New_world_name;
-        }
-    }
+                    RE.highlight_mode = HIGHLIGHT_MOD_NONE;
+                    RE.highlight_type = HIGHLIGHT_BLOCKS;
+                    UI.set_ui_hl_type(RE.highlight_type);
+                    UI.set_ui_hl_mode(RE.highlight_mode);
+
+                    RE.highlight_wcoord = {-1, -1, -1};
+                    RE.highlight_wcoord2 = {-1, -1, -1};
+
+                    // world_extras we;
+                    // load_world(New_world_name, true, true, &we, false);
+
+                    world_extras_select wes(false);
+                    wes.world_view_position = true;
+                    wes.meteo = true;
+                    load_world(New_world_name, true, true, nullptr, wes);
+
+                    Current_world_name = New_world_name;
+                }
+            }
             // Current_world_name = "/noworld";
 
             break;
@@ -445,7 +559,7 @@ case SDL_MOUSEMOTION :
     }
 }
 
-void Game::input_maingame()
+void Game::input_construction()
 {
     SDL_Event event;
     SDL_Keymod km = SDL_GetModState();
@@ -469,7 +583,28 @@ void Game::input_maingame()
                                 RE.highlight_wcoord = {-1, -1, -1};
                             }
                             else
-                                state = STATE_MENU;
+                            {
+                                // std::string total_filename = "saves/";
+                                // total_filename.append(Current_world_name);
+                                // total_filename.append("/world.isosave");
+
+                                // status = world.save_to_file(total_filename);
+
+                                // if(status == 0)
+                                // {
+                                //     world_extras we;
+                                //     world_extras_fill(we);
+                                //     save_world_extras(Current_world_name, we);
+                                //     std::cout << "world saved !\n";
+                                // }
+                                // else
+                                // {
+                                //     std::cout << status << " : failded to save world :(\n";
+                                // }
+
+                                state = STATE_WORLD_SELECTION;
+                                SDL_ShowCursor(SDL_ENABLE);
+                            }
                             break;
 
                         case SDLK_RETURN :
@@ -499,13 +634,22 @@ void Game::input_maingame()
                             RE.shader_features ^= SFEATURE_SHADOWS;
                             break;
 
+                        case SDLK_g :
+                            RE.shader_features ^= SFEATURE_GRID;
+                            break;
+
                         case SDLK_F6 : 
                             RE.shader_features ^= SFEATURE_BLOOM;
                             break;
 
                         case SDLK_TAB :
-                            RE.highlight_type = (RE.highlight_type+1)%6;
+                            RE.highlight_type = (RE.highlight_type+1)%5;
                             RE.highlight_type = RE.highlight_type == 0 ? 1 : RE.highlight_type;
+
+                            RE.height_volume_tool = -1;
+
+                            RE.highlight_wcoord = {-1, -1, -1};
+
                             UI.set_ui_hl_type(RE.highlight_type);
                             break;
 
@@ -513,42 +657,46 @@ void Game::input_maingame()
                             UI.set_ui_hl_type(HIGHLIGHT_MOD_NONE);
                             RE.highlight_type  = HIGHLIGHT_MOD_NONE;
                             RE.highlight_wcoord = {-1, -1, -1};
-                            RE.highlight_wcoord2 = {-1, -1, -1};
                             break;
 
                         case SDLK_1 :
+                            RE.highlight_wcoord = {-1, -1, -1};
                             UI.set_ui_hl_type(HIGHLIGHT_BLOCKS);
                             RE.highlight_type = HIGHLIGHT_BLOCKS;
                             break;
 
                         case SDLK_2 :
+                            RE.highlight_wcoord = {-1, -1, -1};
                             UI.set_ui_hl_type(HIGHLIGHT_FLOOR);
                             RE.highlight_type = HIGHLIGHT_FLOOR;
                             break;
                         
                         case SDLK_3 :
-                            UI.set_ui_hl_type(HIGHLIGHT_WALL_X);
-                            RE.highlight_type = HIGHLIGHT_WALL_X;
+                            RE.highlight_wcoord = {-1, -1, -1};
+                            RE.height_volume_tool = -1;
+                            UI.set_ui_hl_type(HIGHLIGHT_WALL);
+                            RE.highlight_type = HIGHLIGHT_WALL;
                             break;
 
                         case SDLK_4 :
-                            UI.set_ui_hl_type(HIGHLIGHT_WALL_Y);
-                            RE.highlight_type = HIGHLIGHT_WALL_Y;
-                            break;
-
-                        case SDLK_5 :
+                            RE.highlight_wcoord = {-1, -1, -1};
+                            RE.height_volume_tool = -1;
                             UI.set_ui_hl_type(HIGHLIGHT_VOLUME);
                             RE.highlight_type = HIGHLIGHT_VOLUME;
                             break;
 
                         case SDLK_z :
-                            RE.highlight_mode = (RE.highlight_mode+1)%5;
+                            RE.highlight_wcoord = {-1, -1, -1};
+                            RE.highlight_wcoord2 = {-1, -1, -1};
+                            RE.highlight_mode = (RE.highlight_mode+1)%4;
                             UI.set_ui_hl_mode(RE.highlight_mode);
                             break;
 
                         case SDLK_s :
+                            RE.highlight_wcoord = {-1, -1, -1};
+                            RE.highlight_wcoord2 = {-1, -1, -1};
                             RE.highlight_mode = RE.highlight_mode-1;
-                            RE.highlight_mode = RE.highlight_mode < 0 ? 4 : RE.highlight_mode;
+                            RE.highlight_mode = RE.highlight_mode < 0 ? 3 : RE.highlight_mode;
                             UI.set_ui_hl_mode(RE.highlight_mode);
                             break;
 
@@ -560,18 +708,6 @@ void Game::input_maingame()
                         case SDLK_d :
                         {
                             RE.rotate_camera(1);
-
-                            if(RE.highlight_type == HIGHLIGHT_WALL_Y)
-                            {
-                                RE.highlight_type = HIGHLIGHT_WALL_X;
-                                UI.set_ui_hl_type(RE.highlight_type);
-                            }
-                            else
-                            if(RE.highlight_type == HIGHLIGHT_WALL_X)
-                            {
-                                RE.highlight_type = HIGHLIGHT_WALL_Y;
-                                UI.set_ui_hl_type(RE.highlight_type);
-                            }
 
                             GameEvent.drop_all_nfs_event();
 
@@ -588,18 +724,6 @@ void Game::input_maingame()
                         case SDLK_q :
                         {
                             RE.rotate_camera(-1);
-
-                            if(RE.highlight_type == HIGHLIGHT_WALL_Y)
-                            {
-                                RE.highlight_type = HIGHLIGHT_WALL_X;
-                                UI.set_ui_hl_type(RE.highlight_type);
-                            }
-                            else
-                            if(RE.highlight_type == HIGHLIGHT_WALL_X)
-                            {
-                                RE.highlight_type = HIGHLIGHT_WALL_Y;
-                                UI.set_ui_hl_type(RE.highlight_type);
-                            }
 
                             GameEvent.drop_all_nfs_event();
 
@@ -639,7 +763,6 @@ void Game::input_maingame()
                         {
                             std::string total_filename = "saves/";
                             total_filename.append(Current_world_name);
-                            // total_filename.append("plain");
                             total_filename.append("/world.isosave");
 
                             status = world.save_to_file(total_filename);
@@ -655,10 +778,10 @@ void Game::input_maingame()
                             {
                                 std::cout << status << " : failded to save world :(\n";
                             }
-                            break;
                         }
+                            break;
 
-                        case SDLK_F9 :
+                        case SDLK_F9 :                            
                             GameEvent.drop_game_event();
                             if(!GameEvent.is_NFS_reading_to_wpg)
                                 load_world(Current_world_name);
@@ -680,6 +803,20 @@ void Game::input_maingame()
                             Current_block = circularPrev(unlocked_blocks, Current_block);
                             UI.set_ui_current_blocks(unlocked_blocks, Current_block);
                             break;
+                        
+                        case SDLK_UP :
+                            Current_meteo = circularNext(unlocked_meteo, Current_meteo);
+                            RE.set_global_illumination(meteos[*Current_meteo].global_illumination);
+                            RE.background_shader = meteos[*Current_meteo].background_shader;
+                            RE.background_shader_data = meteos[*Current_meteo].add_data;
+                            break;
+
+                        case SDLK_DOWN :
+                            Current_meteo = circularPrev(unlocked_meteo, Current_meteo);
+                            RE.set_global_illumination(meteos[*Current_meteo].global_illumination);
+                            RE.background_shader = meteos[*Current_meteo].background_shader;
+                            RE.background_shader_data = meteos[*Current_meteo].add_data;
+                            break;
 
                         case SDLK_h :
                             std::cout << "sprite counter : " << RE.sprite_counter << '\n';
@@ -688,6 +825,41 @@ void Game::input_maingame()
                             std::cout << "World view position : " << world.world_view_position << '\n';
                             break;
                         
+                        case SDLK_p :
+                            // std::cout << "\nrefreshing shaders...";
+                            system("cls");
+                            init_meteos();
+                            RE.set_global_illumination(meteos[*Current_meteo].global_illumination);
+                            RE.background_shader = meteos[*Current_meteo].background_shader;
+                            RE.background_shader_data = meteos[*Current_meteo].add_data;
+                            break;
+                        
+                        case SDLK_f : 
+                            
+                            if(RE.highlight_type != HIGHLIGHT_PIPETTE)
+                            {
+                                Current_HL_type = RE.highlight_type;
+                                RE.highlight_wcoord = {-1, -1, -1};
+                                RE.highlight_type = HIGHLIGHT_PIPETTE;
+                                UI.set_ui_hl_type(HIGHLIGHT_PIPETTE);
+                            }
+                            else
+                            {
+                                RE.highlight_type = Current_HL_type;
+                                RE.highlight_wcoord = {-1, -1, -1};
+                                UI.set_ui_hl_type(RE.highlight_type);
+                            }
+
+                            break;
+
+                        case SDLK_x : 
+
+                            Show_HUD = !Show_HUD;
+                            // SDL_ShowCursor(Show_HUD);
+
+                            break;
+
+
                         // case SDLK_KP_ENTER : 
                         //     for(int i = 0; i < 500; i++)
                         //     {
@@ -699,31 +871,10 @@ void Game::input_maingame()
                         //     }
                         //     break;
 
-                        // print begin and end coordinates of a selection as well as the length on the three axes
-                        case SDLK_w: { 
-                            if (RE.highlight_mode > HIGHLIGHT_MOD_NONE) {
-                                std::cout << "Selection begin: x = " << RE.highlight_wcoord2.x 
-                                << ", y = " << RE.highlight_wcoord2.y 
-                                << ", z = " << RE.highlight_wcoord2.z << std::endl;
-
-                                std::cout << "Selection end: x = " 
-                                << RE.highlight_wcoord.x 
-                                << ", y = " << RE.highlight_wcoord.y 
-                                << ", z = " << RE.highlight_wcoord.z << std::endl;
-
-                                std::cout << "Selection length: x = " 
-                                << abs(RE.highlight_wcoord.x - RE.highlight_wcoord2.x) + 1 
-                                << ", y = " << abs(RE.highlight_wcoord.y - RE.highlight_wcoord2.y) +1 
-                                << ", z = " << abs(RE.highlight_wcoord.z - RE.highlight_wcoord2.z) +1 
-                                << std::endl << std::endl;
-                                
-                            }
-                            break;
-                        }
-
                         default : break;
                     }
                 break;
+
             case SDL_MOUSEMOTION :
                 if(event.motion.state == SDL_BUTTON_RMASK)
                 {
@@ -767,7 +918,22 @@ void Game::input_maingame()
             case SDL_MOUSEBUTTONDOWN :
                 if(event.button.button == SDL_BUTTON_LEFT)
                 {
-                    if(RE.highlight_wcoord2.x == -1 && RE.highlight_type >= HIGHLIGHT_FLOOR)
+                    if(RE.highlight_type == HIGHLIGHT_PIPETTE)
+                    {
+                        Uint8 id = world.get_block_id_wcoord(RE.highlight_wcoord.x, RE.highlight_wcoord.y, RE.highlight_wcoord.z);
+
+                        auto pipette = std::find(unlocked_blocks.begin(), unlocked_blocks.end(), id);
+
+                        if(pipette != unlocked_blocks.end() || *pipette == *unlocked_blocks.end())
+                        {
+                            // std::cout << "\npipette moment " << id;
+
+                            Current_block = pipette;
+                            UI.set_ui_current_blocks(unlocked_blocks, Current_block);
+                        }
+
+                    }
+                    else if(RE.highlight_wcoord2.x == -1 && RE.highlight_type >= HIGHLIGHT_FLOOR)
                     {
                         RE.highlight_wcoord2 = RE.highlight_wcoord;
                     }
@@ -801,10 +967,14 @@ int Game::mainloop()
 {
     while(state)
     {
+        timems = Get_time_ms() - timems_start;
+        
         input();
         GameEvent.handle();
         RE.render_frame();
-        UI.render_frame(state, RE.screen, New_world_name);
+
+        if(Show_HUD || state != STATE_CONSTRUCTION)
+            UI.render_frame(state, RE.screen, New_world_name, Menu_hl_name);
 
         GPU_Flip(RE.screen);
     }

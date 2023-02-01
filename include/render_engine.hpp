@@ -13,6 +13,8 @@
 #include <coords.hpp>
 #include <constants.hpp>
 
+extern Uint64 timems;
+
 Uint64 Get_time_ms();
 
 class Multithreaded_Event_Handler;
@@ -69,7 +71,8 @@ struct Render_Engine
     Shader shader;
     Shader world_render_shader;
     Shader post_process_shader;
-    Shader background_shader;
+    std::shared_ptr<Shader> background_shader;
+    int background_shader_data;
 
     float global_illumination[4];
     float gi_direction[3];
@@ -89,8 +92,6 @@ struct Render_Engine
     bool shader_enable;
     unsigned int shader_features;
     unsigned int sprite_counter;
-
-    Uint64 timems;
 
     /******** RENDER ***********************/
     // old
