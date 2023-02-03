@@ -16,11 +16,9 @@ struct Texture
 
     Texture(uint32_t);
     Texture();
-    
-    void init_from_file(const char*);
-
     ~Texture();
 
+    void init_from_file(const char*);
     void set_atlas_srcrect(int nbcol, int nbline, int id);
 };
 

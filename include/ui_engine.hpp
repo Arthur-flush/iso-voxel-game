@@ -50,9 +50,21 @@ class UI_tile
         int atlas_id;
 
     public :
-        Texture atlas;
+    
+        std::shared_ptr<Texture> atlas;
         
         UI_tile(const char* filename, 
+                int acol, 
+                int aline, 
+                int aid,
+                int screenw,
+                int screenh,
+                float sizex,
+                float sizey,
+                float x,
+                float y);
+
+        UI_tile(std::shared_ptr<Texture> t_atlas, 
                 int acol, 
                 int aline, 
                 int aid,

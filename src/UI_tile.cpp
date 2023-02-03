@@ -9,12 +9,14 @@ UI_tile::UI_tile(const char* filename, int acol, int aline, int aid,
                  float y) 
                  : atlas_col(acol), atlas_line(aline), atlas_id(aid)
 {
+    atlas = std::make_shared<Texture>();
+
     if(filename)
-        atlas.init_from_file(filename);
+        atlas->init_from_file(filename);
 
-    atlas.set_atlas_srcrect(atlas_col, atlas_line, atlas_id);
+    atlas->set_atlas_srcrect(atlas_col, atlas_line, atlas_id);
 
-    GPU_SetAnchor(atlas.ptr, 0.5, 0.5);
+    GPU_SetAnchor(atlas->ptr, 0.5, 0.5);
 
     sizex *= screenh;
     sizey *= screenh;
@@ -25,8 +27,39 @@ UI_tile::UI_tile(const char* filename, int acol, int aline, int aid,
     dest.x = x;
     dest.y = y;
 
-    dest.h = atlas.ptr->h/atlas_line;
-    dest.w = atlas.ptr->w/atlas_col;
+    dest.h = atlas->ptr->h/atlas_line;
+    dest.w = atlas->ptr->w/atlas_col;
+
+    scalex = (float)(sizex)/dest.w;
+    scaley = (float)(sizey)/dest.h;
+}
+
+UI_tile::UI_tile(std::shared_ptr<Texture> t_atlas, int acol, int aline, int aid,
+                 int screenw, 
+                 int screenh,
+                 float sizex,
+                 float sizey,
+                 float x,
+                 float y) 
+                 : atlas_col(acol), atlas_line(aline), atlas_id(aid)
+{
+    atlas = t_atlas;
+
+    atlas->set_atlas_srcrect(atlas_col, atlas_line, atlas_id);
+
+    GPU_SetAnchor(atlas->ptr, 0.5, 0.5);
+
+    sizex *= screenh;
+    sizey *= screenh;
+
+    x *= screenw;
+    y *= screenh;
+
+    dest.x = x;
+    dest.y = y;
+
+    dest.h = atlas->ptr->h/atlas_line;
+    dest.w = atlas->ptr->w/atlas_col;
 
     scalex = (float)(sizex)/dest.w;
     scaley = (float)(sizey)/dest.h;
@@ -58,13 +91,13 @@ bool UI_tile::is_mouse_over()
 void UI_tile::change_atlas_id(int newaid)
 {
     atlas_id = newaid;
-    atlas.set_atlas_srcrect(atlas_col, atlas_line, atlas_id);
+    atlas->set_atlas_srcrect(atlas_col, atlas_line, atlas_id);
 }
 
 void UI_tile::render(GPU_Target *screen)
 {
-    if(atlas.ptr)
+    if(atlas && atlas->ptr)
     {
-        GPU_BlitScale(atlas.ptr, &atlas.src, screen, dest.x, dest.y, scalex, scaley);
+        GPU_BlitScale(atlas->ptr, &atlas->src, screen, dest.x, dest.y, scalex, scaley);
     }
 }

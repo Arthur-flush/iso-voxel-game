@@ -38,6 +38,7 @@ tested floats exemple :
 #define STATE_CONSTRUCTION    1
 #define STATE_WORLD_SELECTION 2
 #define STATE_MAIN_MENU       3
+#define STATE_BLOCK_SELECTION 4
 
 //////// CHUNKS ////////
 #define CHUNK_SIZE 8

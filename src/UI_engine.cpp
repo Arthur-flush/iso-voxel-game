@@ -235,7 +235,7 @@ void UI_Engine::generate_tiles(int game_state, int screenw, int screenh)
         main_game_hl_mode = std::make_unique<UI_tile>(
         "ressources/textures/ui/hilight_mode.png", 5, 1, 0, 
         screenw, screenh, 
-        0.10, 0.10, 
+        0.15, 0.15, 
         0.50, 0.90);
 
         main_game_hl_type = std::make_unique<UI_tile>(

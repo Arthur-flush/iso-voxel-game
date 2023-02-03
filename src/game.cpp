@@ -199,12 +199,12 @@ void Game::init(GPU_Target* _screen)
 
     init_meteos();
 
-    unlocked_meteo.push_front(METEO_MAIN_MENU);
+    // unlocked_meteo.push_front(METEO_MAIN_MENU);
     unlocked_meteo.push_front(METEO_ANIMATED_SKY);
     unlocked_meteo.push_front(METEO_AZUR_AURORA);
-    unlocked_meteo.push_front(METEO_JADE_AURORA);
-    unlocked_meteo.push_front(METEO_SCARLET_AURORA);
-    unlocked_meteo.push_front(METEO_ORCHID_AURORA);
+    // unlocked_meteo.push_front(METEO_JADE_AURORA);
+    // unlocked_meteo.push_front(METEO_SCARLET_AURORA);
+    // unlocked_meteo.push_front(METEO_ORCHID_AURORA);
     unlocked_meteo.push_front(METEO_NEBULA);
     Current_meteo = unlocked_meteo.begin();
 
@@ -393,14 +393,28 @@ void Game::refresh_world_render_fast()
 
 void Game::input()
 {
-    if(state == STATE_CONSTRUCTION)
-        input_construction();
-    
-    else if(state == STATE_WORLD_SELECTION)
-        input_world_selection();
-    
-    else if(state == STATE_MAIN_MENU)
+    switch (state)
+    {
+    case STATE_MAIN_MENU :
         input_main_menu();
+        break;
+
+    case STATE_WORLD_SELECTION :
+        input_world_selection();
+        break;
+    
+    case STATE_BLOCK_SELECTION :
+        input_block_selection();
+        break;
+    
+    case STATE_CONSTRUCTION :
+        input_construction();
+        break;
+
+    default:
+        break;
+    }
+
 }
 
 void Game::input_main_menu()
@@ -559,6 +573,64 @@ void Game::input_world_selection()
     }
 }
 
+void Game::input_block_selection()
+{
+    SDL_Event event;
+    SDL_Keymod km = SDL_GetModState();
+    SDL_GetMouseState((int*)&mouse.x, (int*)&mouse.y);
+
+    // std::cout << "\n" << New_world_name;
+
+    while(SDL_PollEvent(&event))
+    {
+    switch(event.key.type)
+    {
+        case SDL_KEYDOWN :
+            if(event.key.type == SDL_KEYDOWN && event.key.repeat == 0)
+                switch(event.key.keysym.sym)
+                {
+                    case SDLK_F4 : 
+
+                        if(km & KMOD_LALT)
+                        {
+                            state = STATE_QUIT;
+                        }
+
+                    case SDLK_w :
+                    case SDLK_ESCAPE :
+                        state = STATE_CONSTRUCTION;
+                        SDL_ShowCursor(SDL_DISABLE);
+                        break;
+                    
+
+                    case SDLK_RETURN :
+                        if(km & KMOD_LALT)
+                            GPU_SetFullscreen(!GPU_GetFullscreen(), false);
+                        break;
+
+                    default : break;
+                }
+        
+        case SDL_MOUSEBUTTONDOWN :
+            if(event.button.button == SDL_BUTTON_LEFT)
+            {
+                // if(Menu_hl_name == IDMENU_QUIT)
+                // {
+                //     state = STATE_QUIT;
+                // }
+                
+                // else if(Menu_hl_name == IDMENU_PLAY)
+                // {
+                //     state = STATE_WORLD_SELECTION;
+                // }
+            }
+            break;
+
+        default : break;
+    }
+    }
+}
+
 void Game::input_construction()
 {
     SDL_Event event;
@@ -688,7 +760,7 @@ void Game::input_construction()
                         case SDLK_z :
                             RE.highlight_wcoord = {-1, -1, -1};
                             RE.highlight_wcoord2 = {-1, -1, -1};
-                            RE.highlight_mode = (RE.highlight_mode+1)%4;
+                            RE.highlight_mode = (RE.highlight_mode+1)%5;
                             UI.set_ui_hl_mode(RE.highlight_mode);
                             break;
 
@@ -696,7 +768,7 @@ void Game::input_construction()
                             RE.highlight_wcoord = {-1, -1, -1};
                             RE.highlight_wcoord2 = {-1, -1, -1};
                             RE.highlight_mode = RE.highlight_mode-1;
-                            RE.highlight_mode = RE.highlight_mode < 0 ? 3 : RE.highlight_mode;
+                            RE.highlight_mode = RE.highlight_mode < 0 ? 4 : RE.highlight_mode;
                             UI.set_ui_hl_mode(RE.highlight_mode);
                             break;
 
@@ -853,23 +925,13 @@ void Game::input_construction()
                             break;
 
                         case SDLK_x : 
-
                             Show_HUD = !Show_HUD;
-                            // SDL_ShowCursor(Show_HUD);
-
                             break;
 
-
-                        // case SDLK_KP_ENTER : 
-                        //     for(int i = 0; i < 500; i++)
-                        //     {
-                        //         block_coordonate test = {0};
-                        //         test.chunk.z = 15;
-                        //         test.chunk.x = 7;
-                        //         test.chunk.y = 7;
-                        //         GameEvent.add_event(GAME_EVENT_SINGLE_BLOCK_MOD_ALT, test, BLOCK_RED);
-                        //     }
-                        //     break;
+                        case SDLK_w :
+                            state = STATE_BLOCK_SELECTION;
+                            SDL_ShowCursor(SDL_ENABLE);
+                            break;
 
                         default : break;
                     }

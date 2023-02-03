@@ -160,15 +160,15 @@ void Multithreaded_Event_Handler::handle()
                 if(RE.window.scale < MAX_FLOAT_SCALE)
                 {
                     RE.window.scale *= 2;
-                    RE.target.x = RE.target.x*2 - (RE.window.size.x*0.5);
-                    RE.target.y = RE.target.y*2 - (RE.window.size.y*0.5);
+                    RE.target.x = RE.target.x*2 - (RE.screen->w*0.5);
+                    RE.target.y = RE.target.y*2 - (RE.screen->h*0.5);
                 }
             }
             else if(RE.window.scale > MIN_FLOAT_SCALE)
             {
                 RE.window.scale /= 2;
-                RE.target.x = (RE.target.x)/2 + (RE.window.size.x*0.25);
-                RE.target.y = (RE.target.y)/2 + (RE.window.size.y*0.25);
+                RE.target.x = (RE.target.x)/2 + (RE.screen->w*0.25);
+                RE.target.y = (RE.target.y)/2 + (RE.screen->h*0.25);
             }
 
             SecondaryThread_opcode |= STHREAD_OP_PG_BLOCK_VISIBLE;

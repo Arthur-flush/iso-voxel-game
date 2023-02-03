@@ -102,6 +102,7 @@ class Game
         
         void input_main_menu();
         void input_world_selection();
+        void input_block_selection();
         void input_construction();
         void input();
 
