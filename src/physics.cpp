@@ -19,11 +19,48 @@ void PhysicsEventWater::execute() {
 
             block_coordonate neighbour = coord + coord3D({x, y, 0});
 
+            int support_count = 0;
+            bool has_support = false;
+            for (int a = 0; a <= 3; a++) {
+                block_coordonate support1 = neighbour + coord3D({a, 0, 0});
+                Uint16 id1 = world->get_block_id(support1);
+                if (id1 != BLOCK_EMPTY && id1 != BLOCK_WATER) {
+                    support_count++;
+                    break;
+                }
+                block_coordonate support2 = neighbour + coord3D({0, a, 0});
+                Uint16 id2 = world->get_block_id(support2);
+                if (id2 != BLOCK_EMPTY && id2 != BLOCK_WATER) {
+                    support_count++;
+                    break;
+                }
+                block_coordonate support3 = neighbour + coord3D({-a, 0, 0});
+                Uint16 id3 = world->get_block_id(support3);
+                if (id3 != BLOCK_EMPTY && id3 != BLOCK_WATER) {
+                    support_count++;
+                    break;
+                }
+                block_coordonate support4 = neighbour + coord3D({0, -a, 0});
+                Uint16 id4 = world->get_block_id(support4);
+                if (id4 != BLOCK_EMPTY && id4 != BLOCK_WATER) {
+                    support_count++;
+                    break;
+                }
+            }
+            if (support_count >= 2) has_support = true;
+            
             if ( 
                 // check if neighbour is in world
                 neighbour.chunk.x >= 0 && neighbour.chunk.x <= world->max_chunk_coord.x &&
                 neighbour.chunk.y >= 0 && neighbour.chunk.y <= world->max_chunk_coord.y &&
                 
+                !(
+                    // check if block bellow is air
+                    world->get_block_id(coord + coord3D({0, 0, -1})) == BLOCK_EMPTY &&
+                    
+                    // check if there are support blocks (solid blocks on the x and y axis at at most 3 blocks of distance)
+                    (!has_support)
+                ) &&
 
                 // check if neighbour is empty
                 world->chunks[neighbour.chunk.x][neighbour.chunk.y][neighbour.chunk.z].blocks[neighbour.x][neighbour.y][neighbour.z].id == BLOCK_EMPTY

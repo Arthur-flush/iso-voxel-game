@@ -67,6 +67,11 @@ Uint16 World::get_block_id(chunk_coordonate coord, int x, int y, int z)
     return b->id;
 }
 
+Uint16 World::get_block_id(block_coordonate coord)
+{
+    return get_block_id(coord.chunk, coord.x, coord.y, coord.z);
+}
+
 Uint16 World::get_block_id_wcoord(int x, int y, int z)
 {
     block *b = get_block_wcoord(x, y, z);

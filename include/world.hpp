@@ -29,6 +29,7 @@ struct World
     block* get_block(chunk_coordonate, int, int, int);
     block* get_block_wcoord(int, int, int);
     Uint16 get_block_id(chunk_coordonate, int, int, int);
+    Uint16 get_block_id(block_coordonate);
     Uint16 get_block_id_wcoord(int, int, int);
 
     Uint16 get_opaque_block_id(chunk_coordonate, int, int, int);
