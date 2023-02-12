@@ -97,8 +97,6 @@ void main()
         x = block_position[0].x + Vblock_height[0];
     }
 
-
-
     for(int i = 0; i < line_size; i++)
     {
         for(int j = 0; j < 3; j++)
@@ -130,7 +128,8 @@ void main()
             MozCoord = VMozCoord[j];
 
             // uint depth = Vblock_height[0];
-            uint depth = (finaly+finalx + 2*Vblock_height[0]);
+            // uint depth = (finaly+finalx + 2*Vblock_height[0]);
+            uint depth = Vblock_height[0]+1;
             block_info = id + (depth <<8);
 
             EmitVertex();

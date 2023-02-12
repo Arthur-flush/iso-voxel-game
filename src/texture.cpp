@@ -22,7 +22,7 @@ Texture::Texture(uint32_t id)
 
     case BLOCK_BORDER           : filename.append("block/border.png"); break;
 
-    case BLOCK_PARTS            : filename.append("block/parts.png"); break;
+    case BLOCK_LIGHT            : filename.append("block/light.png"); break;
 
     case MOSAIC                 : filename.append("block/mosaic.png"); break;
 
@@ -47,11 +47,27 @@ Texture::Texture(uint32_t id)
         src.w = ptr->texture_w;
         src.h = ptr->texture_h;
 
-        GPU_SetImageFilter(ptr, GPU_FILTER_NEAREST);
+        if(id != BLOCK_LIGHT)
+            GPU_SetImageFilter(ptr, GPU_FILTER_NEAREST);
+        else
+        {
+            GPU_SetBlendMode(ptr, GPU_BLEND_NORMAL);
 
+            // GPU_BlendMode test = GPU_GetBlendModeFromPreset(GPU_BLEND_ADD);
 
-        // if(id == MOSAIC)
-        //     GPU_SetBlending(ptr, false);
+            // test.color_equation = 
+
+            // GPU_SetBlendFunction(ptr, 
+            // GPU_FUNC_ONE, 
+            // GPU_FUNC_ONE, 
+            // GPU_FUNC_ONE, 
+            // GPU_FUNC_ONE);
+
+            // GPU_SetBlendEquation(ptr, GPU_EQ_ADD, GPU_EQ_SUBTRACT);
+        }
+
+        if(id == MOSAIC)
+            GPU_SetBlending(ptr, false);
         if(id == BACKGROUND_SUNSET)
             GPU_SetBlendMode(ptr, GPU_BLEND_NORMAL);
         if(id == BLOCK_HIGHLIGHT)
@@ -73,6 +89,7 @@ void Texture::init_from_file(const char* filename)
     // std::cout << "UI " << filename << "\n" << ptr << "\n";
 
     GPU_SetImageFilter(ptr, GPU_FILTER_NEAREST);
+    // GPU_SetImageFilter(ptr, GPU_FILTER_LINEAR);
 
     GPU_SetBlendMode(ptr, GPU_BLEND_NORMAL);
 }

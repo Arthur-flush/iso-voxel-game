@@ -67,6 +67,12 @@ UI_tile::UI_tile(std::shared_ptr<Texture> t_atlas, int acol, int aline, int aid,
 
 void UI_tile::change_size_norm(float sizex, float sizey)
 {
+    sizex = ceil(sizex);
+    sizey = ceil(sizey);
+
+    sizex = (int)(sizex)%2 ? sizex : sizex-1;
+    sizey = (int)(sizey)%2 ? sizey : sizey-1;
+
     scalex = (float)(sizex)/dest.w;
     scaley = (float)(sizey)/dest.h;
 }
@@ -94,10 +100,30 @@ void UI_tile::change_atlas_id(int newaid)
     atlas->set_atlas_srcrect(atlas_col, atlas_line, atlas_id);
 }
 
-void UI_tile::render(GPU_Target *screen)
+void UI_tile::refresh_atlas_id()
+{
+    atlas->set_atlas_srcrect(atlas_col, atlas_line, atlas_id);
+}
+
+void UI_tile::render(GPU_Target *screen, bool use_scale)
 {
     if(atlas && atlas->ptr)
     {
-        GPU_BlitScale(atlas->ptr, &atlas->src, screen, dest.x, dest.y, scalex, scaley);
+        if(use_scale)
+            GPU_BlitScale(atlas->ptr, &atlas->src, screen, dest.x, dest.y, scalex, scaley);
+
+        else
+            GPU_Blit(atlas->ptr, &atlas->src, screen, dest.x, dest.y);
+
+
+        // GPU_Rect test;
+
+        // test.x = dest.x;
+        // test.y = dest.y;
+        // test.w = scalex*dest.w;
+        // test.h = scaley*dest.h;
+
+        // GPU_BlitRect(atlas->ptr, &atlas->src, screen, &test);
+
     }
 }

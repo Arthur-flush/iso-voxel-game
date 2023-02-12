@@ -2,6 +2,7 @@
 #define RENDER_ENGINE_HPP
 
 #include <memory>
+#include <queue>
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_gpu.h>
@@ -41,17 +42,19 @@ struct Render_Engine
 
     GPU_Target *screen;
 
-    GPU_Target *screen2;
-    GPU_Image  *final_world_render;
+    GPU_Target *DFIB_screen;
+    GPU_Image  *DFIB_FBO;
 
-    GPU_Target *screen3;
-    GPU_Image  *opaque_world_render;
+    GPU_Target *Color_screen;
+    GPU_Image  *Color_FBO;
 
-    GPU_Target *background;
-    GPU_Image *background_image;
+    GPU_Target *light_screen;
+    GPU_Image *light_FBO;
 
-    GPU_Target *depth_fbo;
-    GPU_Image  *depth_fbo_image;
+    GPU_Target *transparent_screen;
+    GPU_Image  *transparent_FBO;
+
+    // GPU_Target
 
     World &world;
 
@@ -68,11 +71,16 @@ struct Render_Engine
 
     bool grid_enable;
 
-    Shader shader;
+    Shader DFIB_shader;
+    Shader transparent_shader;
     Shader world_render_shader;
     Shader post_process_shader;
+    Shader light_shader;
     std::shared_ptr<Shader> background_shader;
     int background_shader_data;
+
+    std::queue<screen_block*> lights;
+    void render_lights();
 
     float global_illumination[4];
     float gi_direction[3];
@@ -156,6 +164,8 @@ struct Render_Engine
 
     void set_global_illumination_direction();
     void set_global_illumination(float[4]);
+
+    void refresh_shaders();
 };
 
 

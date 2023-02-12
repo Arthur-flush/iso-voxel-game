@@ -7,8 +7,8 @@ int iceil(float x)
 
 coord3D select_screen_block_coord(screen_block *sb)
 {
-    if(!sb)
-        return {-1, -1, -1};
+    if(!sb || !sb->opaque_block.id)
+        return {HIGHLIGHT_NOCOORD, HIGHLIGHT_NOCOORD, HIGHLIGHT_NOCOORD};
 
     if(sb->height_transparent > sb->height && sb->transparent_block.id != BLOCK_WATER)
         return {sb->x_transparent, sb->y_transparent, sb->height_transparent};
@@ -26,7 +26,7 @@ void Render_Engine::center_camera()
 
 void Render_Engine::highlight_block2()
 {
-    highlight_wcoord = {-1, -1, -1};
+    highlight_wcoord = {HIGHLIGHT_NOCOORD, HIGHLIGHT_NOCOORD, HIGHLIGHT_NOCOORD};
 
     fcoord2D mouse2;
 
@@ -164,16 +164,16 @@ void Render_Engine::highlight_block2()
 
         if(id && id != BLOCK_WATER)
         {
-            highlight_wcoord = {1, 1, 1};
+            highlight_wcoord = {HIGHLIGHT_NOCOORD, HIGHLIGHT_NOCOORD, HIGHLIGHT_NOCOORD};
         }
     }
 
-    if(highlight_type == HIGHLIGHT_FLOOR && highlight_wcoord2.z != -1)
+    if(highlight_type == HIGHLIGHT_FLOOR && highlight_wcoord2.z != HIGHLIGHT_NOCOORD)
     {
         highlight_wcoord = {iguess.x+highlight_wcoord2.z, iguess.y+highlight_wcoord2.z, highlight_wcoord2.z};
     }
 
-    if(highlight_type == HIGHLIGHT_WALL && highlight_wcoord2.z != -1)
+    if(highlight_type == HIGHLIGHT_WALL && highlight_wcoord2.z != HIGHLIGHT_NOCOORD)
     {
         int x = guess.x+highlight_wcoord2.z;
         int y = guess.y+highlight_wcoord2.z;
@@ -191,7 +191,7 @@ void Render_Engine::highlight_block2()
         }
     }
 
-    if(highlight_type == HIGHLIGHT_VOLUME && highlight_wcoord2.z != -1)
+    if(highlight_type == HIGHLIGHT_VOLUME && highlight_wcoord2.z != HIGHLIGHT_NOCOORD)
     {
         int diff = highlight_wcoord2.z;
         highlight_wcoord = {iguess.x+diff, iguess.y+diff, height_volume_tool};
@@ -205,12 +205,22 @@ void Render_Engine::highlight_block2()
     //     highlight_wcoord.z >= world.max_block_coord.z)
     //     highlight_wcoord = {-1, -1, -1};
 
-    // if(highlight_wcoord.x != -1)
-    // {
+
+    if(highlight_wcoord2.z != HIGHLIGHT_NOCOORD)
+    {
         set_in_interval(highlight_wcoord.x, 0, world.max_block_coord.x-1);
         set_in_interval(highlight_wcoord.y, 0, world.max_block_coord.y-1);
         set_in_interval(highlight_wcoord.z, 0, world.max_block_coord.z-1);
-    // }
+    }
+
+    if(highlight_wcoord2.z == HIGHLIGHT_NOCOORD && (highlight_wcoord.x < 0 || highlight_wcoord.y < 0 || highlight_wcoord.z < 0))
+    {
+
+        highlight_wcoord = {HIGHLIGHT_NOCOORD, HIGHLIGHT_NOCOORD, HIGHLIGHT_NOCOORD};
+    }
+
+    // if(highlight_mode == HIGHLIGHT_MOD_PLACE)
+    //     std::cout << highlight_wcoord.x << " " << highlight_wcoord.y << " " << highlight_wcoord.z << "\n";
 
     // if(highlight_type == HIGHLIGHT_VOLUME && highlight_wcoord2.z == -1)
     // {
@@ -293,7 +303,7 @@ void Render_Engine::rotate_camera(int new_wvp)
         nx = world.max_block_coord.x - y - height*2;
         ny = x;
 
-        if(highlight_wcoord2.x != -1)
+        if(highlight_wcoord2.x >= 0)
         {
             int tmp = highlight_wcoord2.x; 
 
@@ -306,7 +316,7 @@ void Render_Engine::rotate_camera(int new_wvp)
         nx = y;  
         ny = world.max_block_coord.y - x - height*2;
 
-        if(highlight_wcoord2.x != -1)
+        if(highlight_wcoord2.x >= 0)
         {
             int tmp = highlight_wcoord2.y; 
 

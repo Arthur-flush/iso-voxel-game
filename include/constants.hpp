@@ -4,7 +4,7 @@
 #include <iostream>
 
 const std::string TITLE = "ISOMETRIC VOXEL";
-const std::string VERSION = "dev 0.11.3";
+const std::string VERSION = "dev 0.12.2";
 
 const std::string TXT_MAIN_MENU_QUIT = "QUIT";
 const std::string TXT_MAIN_MENU_PLAY = "BUILD";
@@ -39,6 +39,7 @@ tested floats exemple :
 #define STATE_WORLD_SELECTION 2
 #define STATE_MAIN_MENU       3
 #define STATE_BLOCK_SELECTION 4
+#define STATE_ADVENTURE       5
 
 //////// CHUNKS ////////
 #define CHUNK_SIZE 8
@@ -59,6 +60,8 @@ tested floats exemple :
 #define HIGHLIGHT_WALL        3
 #define HIGHLIGHT_VOLUME      4
 #define HIGHLIGHT_PIPETTE     5
+
+#define HIGHLIGHT_NOCOORD  -1
 
 //////// SHADER FEATURES ////////
 #define SFEATURE_GLOBAL_ILLUMINATION 1
@@ -87,13 +90,13 @@ tested floats exemple :
 #define TEXTURE_UI_DEBUG 256
 
 #define BACKGROUND_SUNSET 0b11000000
-#define MOSAIC            0b00000001
-#define BLOCK_NORMAL      0b00000010
-#define BLOCK_AO          0b00000011
-#define BLOCK_HIGHLIGHT   0b00000100
-#define BLOCK_BORDER      0b00000101
-#define BLOCK_PARTS       0b00000110
-#define SHADERTEXT_WATER  0b00000111
+#define MOSAIC            1
+#define BLOCK_NORMAL      2
+#define BLOCK_AO          3
+#define BLOCK_HIGHLIGHT   4
+#define BLOCK_BORDER      5 
+#define BLOCK_LIGHT       6
+#define SHADERTEXT_WATER  7
 
 //////// CHUNK COMPRESSION ////////
 #define CHUNK_EMPTY       0b000000000
@@ -101,12 +104,12 @@ tested floats exemple :
 
 //////// BLOCK ID ////////
 #define BLOCK_TRANSPARENT_LIMIT 241
+#define BLOCK_LIGHT_LIMIT       225
 #define BLOCK_EMPTY     0
 #define BLOCK_DEBUG     1
 #define BLOCK_BLUE      2
 #define BLOCK_RED       3
 #define BLOCK_GREEN     4
-#define BLOCK_LIGHT     5
 #define BLOCK_SAND      17
 #define BLOCK_WATER     241
 #endif

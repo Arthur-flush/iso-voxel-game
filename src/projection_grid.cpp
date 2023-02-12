@@ -58,7 +58,12 @@ void Projection_grid::init_pos(const int sizex, const int sizey, const int sizez
 
             for(int j = 0; j < size[face][1]; j++)
             {
-                pos[face][i][j].height = 0;
+                pos[face][i][j].height = -1;
+                pos[face][i][j].height_transparent = -1;
+                pos[face][i][j].x = -1;
+                pos[face][i][j].y = -1;
+                pos[face][i][j].x_transparent = -1;
+                pos[face][i][j].y_transparent = -1;
                 pos[face][i][j].is_on_screen = true;
                 pos[face][i][j].render_flags = {0, 0, 0, 0};
                 pos[face][i][j].render_flags_transparent = {0, 0, 0, 0};

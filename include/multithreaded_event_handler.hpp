@@ -5,6 +5,7 @@
 
 #include <SDL2/SDL.h>
 #include <render_engine.hpp>
+#include <sprites.hpp>
 
 // "scale" must be given as a float
 #define GAME_EVENT_NEWSCALE                  0
@@ -12,19 +13,30 @@
 #define GAME_EVENT_ADDSCALE                  1
 // add given pixel_coord to the Render_Engine::target
 #define GAME_EVENT_CAMERA_MOUVEMENT          2
-// replace the world's block at the given coord3D coordonate with the given block_id
-// automaticly translate the coords to world view position
-// automaticly check for any error or bad resquest
-// automaticly refresh the projection grid (shadows, visible blocks and identical_lines)
-#define GAME_EVENT_SINGLE_BLOCK_MOD          5
 
-// replace the world's block at the given block_coordonate with the given block_id
-// does NOT translate the coords to world view position
-// does NOT check for any error or bad resquest
-// automaticly refresh world's display & chunk compression
+// Replace the world's block at the given coord3D coordonate with the given block_id
+// Automaticly translate the coords to world view position
+// Automaticly check for any error or bad resquest
+// Automaticly refresh the projection grid (shadows, visible blocks and identical_lines)
+#define GAME_EVENT_PLAYER_BLOCK_MOD          5
+
+// Replace the world's block at the given block_coordinate with the given block_id
+// Does NOT translate the coords to world view position
+// Does NOT check for any error or bad resquest
+// Automaticly refresh world's display & chunk compression
 // ==> use it when you have to modify a potentialy large quantity of block, but not too frequently
 #define GAME_EVENT_SINGLE_BLOCK_MOD_ALT      6
-#define GAME_EVENT_INIT_WORLD_RENDER_FLAGS   7
+
+// !!! DEPRECATED !!!
+// Place the given sprite voxel in the given wcoord 
+// Does NOT translate the coords to world view position
+// Automaticly check for any error or bad resquest
+// Automaticly update the 'is_occluded' condition oif the voxel
+#define GAME_EVENT_PLACE_SPRITE_VOXEL        7
+// !!! DEPRECATED !!!
+#define GAME_EVENT_REMOVE_SPRITE_VOXEL       8
+
+#define GAME_EVENT_INIT_WORLD_RENDER_FLAGS   9
 
 #define STHREAD_OP_PG_BLOCK_VISIBLE     0b00000010
 #define STHREAD_OP_ALL_BLOCK_VISBLE     0b00000100
@@ -51,6 +63,8 @@ int NFS_operations(void *);
 struct game_event_aditional_data
 {
     float scale;
+    sprite_voxel *svoxel;
+
     pixel_coord target;
 
     world_coordonate wcoord1;
@@ -105,7 +119,7 @@ class Multithreaded_Event_Handler
         void add_event(const int, const block_coordonate, Uint16);
         void add_event(const int, const world_coordonate, Uint16);
         void add_event(const int, const block_coordonate, const block_coordonate);
-        
+        void add_event(const int, sprite_voxel*);
         // Handle all gamevent previously pushed
         // Prepare all secondary thread operation and send them to the corresponding thread
         // It does not include nfs events

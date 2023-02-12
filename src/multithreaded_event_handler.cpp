@@ -128,6 +128,16 @@ void Multithreaded_Event_Handler::add_event(const int _id, const block_coordonat
     add_event(new_event);
 }
 
+void Multithreaded_Event_Handler::add_event(const int _id, sprite_voxel* voxel)
+{
+    game_event new_event;
+
+    new_event.id = _id;
+    new_event.data.svoxel = voxel;
+
+    add_event(new_event);
+}
+
 void Multithreaded_Event_Handler::handle()
 {
     SDL_LockMutex(init_cond);
@@ -187,11 +197,11 @@ void Multithreaded_Event_Handler::handle()
             RE.projection_grid.refresh_visible_frags(RE.target, RE.screen->w, RE.screen->h, RE.block_onscreen_size);
             break;
 
-        case GAME_EVENT_SINGLE_BLOCK_MOD :
+        case GAME_EVENT_PLAYER_BLOCK_MOD :
         {
             int maxz = 0;
 
-            if(RE.highlight_wcoord2.x == -1)
+            if(RE.highlight_wcoord2.x < 0)
             {
                 if(RE.world.modify_block(event.data.wcoord1, event.data.blockid))
                 {
@@ -205,7 +215,7 @@ void Multithreaded_Event_Handler::handle()
                     // SecondaryThread_opcode |= STHREAD_OP_PG_BLOCK_VISIBLE;
                 }
             }
-            else if(RE.highlight_wcoord.x != -1)
+            else if(RE.highlight_wcoord.x >= 0)
             {
                 int xbeg = RE.highlight_wcoord.x;
                 int xend = RE.highlight_wcoord2.x;
@@ -386,7 +396,7 @@ void Multithreaded_Event_Handler::handle()
                     add_nfs_event(NFS_OP_ALL_RENDER_FLAG); 
                 }
 
-                RE.highlight_wcoord2 = {-1, -1, -1};
+                RE.highlight_wcoord2 = {HIGHLIGHT_NOCOORD, HIGHLIGHT_NOCOORD, HIGHLIGHT_NOCOORD};
 
                 // Uint64 end = Get_time_ms();
                 // std::locale::global(std::locale(""));
@@ -418,8 +428,8 @@ void Multithreaded_Event_Handler::handle()
                             chunks
                             [bc.chunk.x]
                             [bc.chunk.y]
-                            [bc.chunk.z].
-                            blocks
+                            [bc.chunk.z]
+                            .blocks
                             [bc.x]
                             [bc.y]
                             [bc.z];
@@ -442,6 +452,72 @@ void Multithreaded_Event_Handler::handle()
                     refresh_identical_line = true;
                 }
 
+            }
+            break;
+
+        case GAME_EVENT_PLACE_SPRITE_VOXEL :
+            {
+                // std::cout << "\nplacing sprite voxel";
+                // std::cout << "at coord " 
+                // << event.data.svoxel->wcoord.x << " "
+                // << event.data.svoxel->wcoord.y << " "
+                // << event.data.svoxel->wcoord.z << " ";
+
+                block_coordonate bc = RE.world.convert_wcoord(event.data.svoxel->wcoord.x, 
+                                                              event.data.svoxel->wcoord.y, 
+                                                              event.data.svoxel->wcoord.z);
+                
+                block *b = &RE.world.
+                            chunks
+                            [bc.chunk.x]
+                            [bc.chunk.y]
+                            [bc.chunk.z]
+                            .blocks
+                            [bc.x]
+                            [bc.y]
+                            [bc.z];
+
+                if(!b->id)
+                {
+                    event.data.svoxel->is_occluded = false;
+                    b->id = event.data.svoxel->id;
+
+                    RE.world.compress_chunk(bc.chunk.x, bc.chunk.y, bc.chunk.z);
+                    // RE.refresh_block_visible(bc.chunk, bc.x, bc.y, bc.z);
+
+                    // coord3D wc = event.data.svoxel->wcoord;
+
+                    // RE.refresh_line_shadows(wc.x, wc.x, wc.y, wc.z);
+
+                    // coord3D pgc = RE.projection_grid.convert_wcoord(wc.x, wc.y, wc.z);
+                    // RE.set_block_renderflags(pgc.x, pgc.y, pgc.z);
+
+                    // RE.refresh_block_render_flags(bc.chunk, bc.x, bc.y, bc.z);
+
+                    refresh_identical_line = true;
+                }
+
+            }
+            break;
+
+        case GAME_EVENT_REMOVE_SPRITE_VOXEL :
+            {
+                block_coordonate bc = RE.world.convert_wcoord(event.data.svoxel->wcoord.x, 
+                                                              event.data.svoxel->wcoord.y, 
+                                                              event.data.svoxel->wcoord.z);
+                
+                block *b = &RE.world.
+                            chunks
+                            [bc.chunk.x]
+                            [bc.chunk.y]
+                            [bc.chunk.z]
+                            .blocks
+                            [bc.x]
+                            [bc.y]
+                            [bc.z];
+
+                b->id = BLOCK_EMPTY;
+                RE.world.compress_chunk(bc.chunk.x, bc.chunk.y, bc.chunk.z);
             }
             break;
 

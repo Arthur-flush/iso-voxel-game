@@ -41,21 +41,23 @@ void Game::init_Render_Engine(GPU_Target* _screen)
 
     RE.max_render_coord.z = (world.max_chunk_coord.z+1)*CHUNK_SIZE;
 
-    RE.final_world_render = GPU_CreateImage(RE.screen->w, RE.screen->h, GPU_FORMAT_RGBA);
-    GPU_SetAnchor(RE.final_world_render, 0, 0);
-    RE.screen2 = GPU_LoadTarget(RE.final_world_render);
+    RE.DFIB_FBO = GPU_CreateImage(RE.screen->w, RE.screen->h, GPU_FORMAT_RGBA);
+    GPU_SetAnchor(RE.DFIB_FBO, 0, 0);
+    RE.DFIB_screen = GPU_LoadTarget(RE.DFIB_FBO);
 
-    RE.opaque_world_render = GPU_CreateImage(RE.screen->w, RE.screen->h, GPU_FORMAT_RGBA);
-    GPU_SetAnchor(RE.opaque_world_render, 0, 0);
-    RE.screen3 = GPU_LoadTarget(RE.opaque_world_render);
+    RE.Color_FBO = GPU_CreateImage(RE.screen->w, RE.screen->h, GPU_FORMAT_RGBA);
+    GPU_SetAnchor(RE.Color_FBO, 0, 0);
+    RE.Color_screen = GPU_LoadTarget(RE.Color_FBO);
 
-    RE.background_image = GPU_CreateImage(RE.screen->w, RE.screen->h, GPU_FORMAT_RGBA);
-    GPU_SetAnchor(RE.background_image, 0, 0);
-    RE.background = GPU_LoadTarget(RE.background_image);
+    RE.light_FBO = GPU_CreateImage(RE.screen->w, RE.screen->h, GPU_FORMAT_RGBA);
+    GPU_SetAnchor(RE.light_FBO, 0, 0);
+    RE.light_screen = GPU_LoadTarget(RE.light_FBO);
 
-    RE.depth_fbo_image = GPU_CreateImage(RE.screen->w, RE.screen->h, GPU_FORMAT_RGBA);
-    GPU_SetAnchor(RE.depth_fbo_image, 0, 0);
-    RE.depth_fbo = GPU_LoadTarget(RE.depth_fbo_image);
+    // GPU_SetBlendMode(RE.light_FBO, GPU_BLEND_ADD);
+
+    RE.transparent_FBO = GPU_CreateImage(RE.screen->w, RE.screen->h, GPU_FORMAT_RGBA);
+    GPU_SetAnchor(RE.transparent_FBO, 0, 0);
+    RE.transparent_screen = GPU_LoadTarget(RE.transparent_FBO);
 
     UI.UI_image = GPU_CreateImage(RE.screen->w, RE.screen->h, GPU_FORMAT_RGBA);
     GPU_SetAnchor(UI.UI_image, 0, 0);
@@ -64,21 +66,27 @@ void Game::init_Render_Engine(GPU_Target* _screen)
     RE.highlight_mode = HIGHLIGHT_MOD_NONE;
     RE.highlight_type = HIGHLIGHT_BLOCKS;
 
-    RE.shader.activate();
-    GPU_SetShaderImage(RE.Textures[BLOCK_AO]->ptr, RE.shader.get_location("ao"), 2);
-    GPU_SetShaderImage(RE.Textures[SHADERTEXT_WATER]->ptr, RE.shader.get_location("water"), 4);
-    GPU_SetShaderImage(RE.Textures[BLOCK_BORDER]->ptr, RE.shader.get_location("border"), 5);
-    GPU_SetShaderImage(RE.Textures[BLOCK_NORMAL]->ptr, RE.shader.get_location("normal"), 6);
-    GPU_SetShaderImage(RE.Textures[BLOCK_PARTS]->ptr, RE.shader.get_location("parts"), 7);
-    RE.shader.deactivate();
+    RE.DFIB_shader.activate();
+    GPU_SetShaderImage(RE.Textures[BLOCK_AO]->ptr, RE.DFIB_shader.get_location("ao"), 2);
+    GPU_SetShaderImage(RE.Textures[BLOCK_BORDER]->ptr, RE.DFIB_shader.get_location("border"), 5);
+    GPU_SetShaderImage(RE.Textures[BLOCK_NORMAL]->ptr, RE.DFIB_shader.get_location("normal"), 6);
+    RE.DFIB_shader.deactivate();
+
+    RE.transparent_shader.activate();
+    GPU_SetShaderImage(RE.Textures[SHADERTEXT_WATER]->ptr, RE.transparent_shader.get_location("water"), 4);
+    // GPU_SetShaderImage(RE.Textures[BLOCK_NORMAL]->ptr, RE.transparent_shader.get_location("normal"), 6);
+    RE.transparent_shader.deactivate();
 
     RE.max_height_render = world.max_block_coord.z;
 
-    GPU_AddDepthBuffer(RE.screen2);
-    GPU_SetDepthFunction(RE.screen2, GPU_LEQUAL);
+    GPU_AddDepthBuffer(RE.DFIB_screen);
+    GPU_SetDepthFunction(RE.DFIB_screen, GPU_LEQUAL);
 
-    GPU_AddDepthBuffer(RE.depth_fbo);
-    GPU_SetDepthFunction(RE.depth_fbo, GPU_ALWAYS);
+    GPU_AddDepthBuffer(RE.transparent_screen);
+    GPU_SetDepthFunction(RE.transparent_screen, GPU_LEQUAL);
+
+    GPU_AddDepthBuffer(RE.Color_screen);
+    GPU_SetDepthFunction(RE.Color_screen, GPU_ALWAYS);
 }
 
 void Game::generate_debug_world()
@@ -147,6 +155,9 @@ void Game::init(GPU_Target* _screen)
     state = STATE_MAIN_MENU;
     Current_world_name = "/noworld";
 
+    std::string tmpname = "player";
+    player.init_sprite(&GameEvent, &world, &RE, tmpname);
+
     Show_HUD = true;
     UI.generate_tiles(-1, _screen->w, _screen->h);
     UI.generate_tiles(STATE_CONSTRUCTION, _screen->w, _screen->h);
@@ -165,6 +176,10 @@ void Game::init(GPU_Target* _screen)
     while(!unlocked_blocks.empty())
         unlocked_blocks.pop_back();
 
+    unlocked_blocks.push_front(229);
+    unlocked_blocks.push_front(228);
+    unlocked_blocks.push_front(227);
+    unlocked_blocks.push_front(226);
     unlocked_blocks.push_front(39);
     unlocked_blocks.push_front(38);
     unlocked_blocks.push_front(37);
@@ -174,13 +189,6 @@ void Game::init(GPU_Target* _screen)
     unlocked_blocks.push_front(33);
     unlocked_blocks.push_front(32);
     unlocked_blocks.push_front(31);
-    unlocked_blocks.push_front(BLOCK_SAND+6);
-    unlocked_blocks.push_front(BLOCK_SAND+5);
-    unlocked_blocks.push_front(BLOCK_SAND+4);
-    unlocked_blocks.push_front(BLOCK_SAND+3);
-    unlocked_blocks.push_front(BLOCK_SAND+2);
-    unlocked_blocks.push_front(BLOCK_SAND+1);
-    unlocked_blocks.push_front(BLOCK_SAND);
     unlocked_blocks.push_front(BLOCK_WATER+7);
     unlocked_blocks.push_front(BLOCK_WATER+6);
     unlocked_blocks.push_front(BLOCK_WATER+5);
@@ -189,13 +197,31 @@ void Game::init(GPU_Target* _screen)
     unlocked_blocks.push_front(BLOCK_WATER+2);
     unlocked_blocks.push_front(BLOCK_WATER+1);
     unlocked_blocks.push_front(BLOCK_WATER);
-    // unlocked_blocks.push_front(BLOCK_DEBUG);
-    unlocked_blocks.push_front(BLOCK_BLUE);
-    unlocked_blocks.push_front(BLOCK_RED);
-    unlocked_blocks.push_front(BLOCK_GREEN);
+    unlocked_blocks.push_front(BLOCK_SAND+6);
+    unlocked_blocks.push_front(BLOCK_SAND+5);
+    unlocked_blocks.push_front(BLOCK_SAND+4);
+    unlocked_blocks.push_front(BLOCK_SAND+3);
+    unlocked_blocks.push_front(BLOCK_SAND+2);
+    unlocked_blocks.push_front(BLOCK_SAND+1);
+    unlocked_blocks.push_front(BLOCK_SAND);
+    unlocked_blocks.push_front(1);
+    unlocked_blocks.push_front(2);
+    unlocked_blocks.push_front(3);
+    unlocked_blocks.push_front(4);
+    unlocked_blocks.push_front(5);
 
-    Current_block = unlocked_blocks.begin();
+    bs_max_line = 0;
 
+    auto Current_block = unlocked_blocks.begin();
+
+    for(int i = 0; i < 8; i++)
+    {
+        Current_block = circularNext(unlocked_blocks, Current_block);
+        currentblocks[i] = *Current_block;
+        UI.set_ui_current_blocks(i, currentblocks[i]);
+    }
+
+    cb_id = 0;
 
     init_meteos();
 
@@ -212,7 +238,8 @@ void Game::init(GPU_Target* _screen)
     RE.background_shader = meteos[METEO_MAIN_MENU].background_shader;
 
     // UI.set_ui_current_blocks(*circularPrev(unlocked_blocks, Current_block), *Current_block, *circularNext(unlocked_blocks, Current_block));
-    UI.set_ui_current_blocks(unlocked_blocks, Current_block);
+    // UI.set_ui_current_blocks(unlocked_blocks, Current_block);
+
 
     GameEvent.add_nfs_event(NFS_OP_ALL_BLOCK_VISIBLE);
     GameEvent.add_nfs_event(NFS_OP_ALL_RENDER_FLAG);
@@ -364,6 +391,47 @@ int Game::load_world(std::string filename,
     return status;
 }
 
+void Game::create_new_world(coord3D size, std::string &name)
+{
+    World new_world;
+
+    new_world.init(size.x, size.y, size.z);
+
+    int id;
+
+    for(int x = 0; x <= new_world.max_chunk_coord.x; x++)
+    for(int y = 0; y <= new_world.max_chunk_coord.y; y++)
+    // for(int z = 0; z <= new_world.max_chunk_coord.z; z++)
+    {
+        if((x+y)%2)
+            id = 31;
+        else 
+            id = 32;
+
+        memset(new_world.chunks[x][y][0].blocks, id, CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE * sizeof(block));
+    }
+
+    new_world.compress_all_chunks();
+
+    std::string total_filename = "saves/";
+    total_filename.append(name);
+    total_filename.append("/world.isosave");
+
+    int status = new_world.save_to_file(total_filename);
+
+    if(status == 0)
+    {
+        world_extras we;
+        world_extras_fill(we);
+        save_world_extras(name, we);
+        std::cout << "world saved at " << total_filename << "\n";
+    }
+    else
+    {
+        std::cout << status << " : failded to save world :(\n";
+    }
+}
+
 void Game::refresh_world_render()
 {
     GameEvent.drop_all_nfs_event();
@@ -409,6 +477,10 @@ void Game::input()
     
     case STATE_CONSTRUCTION :
         input_construction();
+        break;
+
+    case STATE_ADVENTURE :
+        input_adventure();
         break;
 
     default:
@@ -501,7 +573,9 @@ void Game::input_world_selection()
 
                     case SDLK_ESCAPE :
                     {
-                        SDL_ShowCursor(SDL_ENABLE);
+                        // SDL_ShowCursor(SDL_ENABLE);
+
+                        UI.set_ui_hl_mode(HIGHLIGHT_MOD_NONE);
                         state = STATE_MAIN_MENU;
 
                         // RE.set_global_illumination(meteos[METEO_MAIN_MENU].global_illumination);
@@ -514,7 +588,8 @@ void Game::input_world_selection()
                             GPU_SetFullscreen(!GPU_GetFullscreen(), false);
                         else
                         {
-                            SDL_ShowCursor(SDL_DISABLE);
+                            // SDL_ShowCursor(SDL_DISABLE);
+                            UI.set_ui_hl_mode(RE.highlight_mode);
                             state = STATE_CONSTRUCTION;
                         }
                         break;
@@ -527,7 +602,9 @@ void Game::input_world_selection()
             {
                 if(New_world_name[0] != '/')
                 {
-                    SDL_ShowCursor(SDL_DISABLE);
+                    // SDL_ShowCursor(SDL_DISABLE);
+                    // UI.set_ui_hl_mode(HIGHLIGHT_MOD_NONE);
+                    UI.set_ui_hl_mode(RE.highlight_mode);
                     state = STATE_CONSTRUCTION;
                 }
             }
@@ -550,8 +627,8 @@ void Game::input_world_selection()
                     UI.set_ui_hl_type(RE.highlight_type);
                     UI.set_ui_hl_mode(RE.highlight_mode);
 
-                    RE.highlight_wcoord = {-1, -1, -1};
-                    RE.highlight_wcoord2 = {-1, -1, -1};
+                    RE.highlight_wcoord = {HIGHLIGHT_NOCOORD, HIGHLIGHT_NOCOORD, HIGHLIGHT_NOCOORD};
+                    RE.highlight_wcoord2 = {HIGHLIGHT_NOCOORD, HIGHLIGHT_NOCOORD, HIGHLIGHT_NOCOORD};
 
                     // world_extras we;
                     // load_world(New_world_name, true, true, &we, false);
@@ -599,7 +676,8 @@ void Game::input_block_selection()
                     case SDLK_w :
                     case SDLK_ESCAPE :
                         state = STATE_CONSTRUCTION;
-                        SDL_ShowCursor(SDL_DISABLE);
+                        // SDL_ShowCursor(SDL_DISABLE);
+                        UI.set_ui_hl_mode(RE.highlight_mode);
                         break;
                     
 
@@ -608,22 +686,50 @@ void Game::input_block_selection()
                             GPU_SetFullscreen(!GPU_GetFullscreen(), false);
                         break;
 
+                    case SDLK_a :
+                    case SDLK_LEFT :
+                        cb_id = (cb_id+1)%8;
+                        break;
+                    
+                    case SDLK_RIGHT :
+                    case SDLK_e : 
+                        cb_id = cb_id-1 < 0 ? 7 : cb_id-1;
                     default : break;
                 }
         
         case SDL_MOUSEBUTTONDOWN :
             if(event.button.button == SDL_BUTTON_LEFT)
             {
-                // if(Menu_hl_name == IDMENU_QUIT)
-                // {
-                //     state = STATE_QUIT;
-                // }
-                
-                // else if(Menu_hl_name == IDMENU_PLAY)
-                // {
-                //     state = STATE_WORLD_SELECTION;
-                // }
+                if(new_current_block)
+                {
+                    currentblocks[cb_id] = new_current_block;
+                    UI.set_ui_current_blocks(cb_id, new_current_block);
+                }
             }
+            break;
+
+        case SDL_MOUSEWHEEL :
+            if(km & KMOD_RSHIFT)
+            {
+                UI.UI_scale += event.wheel.y*0.25;
+                if(UI.UI_scale < 0.0)
+                    UI.UI_scale = 0.0;
+                
+                if(UI.UI_scale > 5.0)
+                    UI.UI_scale = 5.0;
+            }
+            else
+            {
+                bs_max_line -= event.wheel.y;
+                int line = (int)(floor(14*UI.UI_scale));
+
+                if(line < 1)
+                    line = 1;
+                    
+                set_in_interval(bs_max_line, 0, unlocked_blocks.size()/line);
+            }
+
+
             break;
 
         default : break;
@@ -649,10 +755,10 @@ void Game::input_construction()
                     switch(event.key.keysym.sym)
                     {
                         case SDLK_ESCAPE :
-                            if(RE.highlight_wcoord2.x != -1)
+                            if(RE.highlight_wcoord2.x >= 0)
                             {
-                                RE.highlight_wcoord2 = {-1, -1, -1};
-                                RE.highlight_wcoord = {-1, -1, -1};
+                                RE.highlight_wcoord2 = {HIGHLIGHT_NOCOORD, HIGHLIGHT_NOCOORD, HIGHLIGHT_NOCOORD};
+                                RE.highlight_wcoord = {HIGHLIGHT_NOCOORD, HIGHLIGHT_NOCOORD, HIGHLIGHT_NOCOORD};
                             }
                             else
                             {
@@ -675,7 +781,8 @@ void Game::input_construction()
                                 // }
 
                                 state = STATE_WORLD_SELECTION;
-                                SDL_ShowCursor(SDL_ENABLE);
+                                // SDL_ShowCursor(SDL_ENABLE);
+                                UI.set_ui_hl_mode(HIGHLIGHT_MOD_NONE);
                             }
                             break;
 
@@ -720,7 +827,7 @@ void Game::input_construction()
 
                             RE.height_volume_tool = -1;
 
-                            RE.highlight_wcoord = {-1, -1, -1};
+                            RE.highlight_wcoord = {HIGHLIGHT_NOCOORD, HIGHLIGHT_NOCOORD, HIGHLIGHT_NOCOORD};
 
                             UI.set_ui_hl_type(RE.highlight_type);
                             break;
@@ -728,45 +835,45 @@ void Game::input_construction()
                         case SDLK_0 :
                             UI.set_ui_hl_type(HIGHLIGHT_MOD_NONE);
                             RE.highlight_type  = HIGHLIGHT_MOD_NONE;
-                            RE.highlight_wcoord = {-1, -1, -1};
+                            RE.highlight_wcoord = {HIGHLIGHT_NOCOORD, HIGHLIGHT_NOCOORD, HIGHLIGHT_NOCOORD};
                             break;
 
                         case SDLK_1 :
-                            RE.highlight_wcoord = {-1, -1, -1};
+                            RE.highlight_wcoord = {HIGHLIGHT_NOCOORD, HIGHLIGHT_NOCOORD, HIGHLIGHT_NOCOORD};
                             UI.set_ui_hl_type(HIGHLIGHT_BLOCKS);
                             RE.highlight_type = HIGHLIGHT_BLOCKS;
                             break;
 
                         case SDLK_2 :
-                            RE.highlight_wcoord = {-1, -1, -1};
+                            RE.highlight_wcoord = {HIGHLIGHT_NOCOORD, HIGHLIGHT_NOCOORD, HIGHLIGHT_NOCOORD};
                             UI.set_ui_hl_type(HIGHLIGHT_FLOOR);
                             RE.highlight_type = HIGHLIGHT_FLOOR;
                             break;
                         
                         case SDLK_3 :
-                            RE.highlight_wcoord = {-1, -1, -1};
+                            RE.highlight_wcoord = {HIGHLIGHT_NOCOORD, HIGHLIGHT_NOCOORD, HIGHLIGHT_NOCOORD};
                             RE.height_volume_tool = -1;
                             UI.set_ui_hl_type(HIGHLIGHT_WALL);
                             RE.highlight_type = HIGHLIGHT_WALL;
                             break;
 
                         case SDLK_4 :
-                            RE.highlight_wcoord = {-1, -1, -1};
+                            RE.highlight_wcoord = {HIGHLIGHT_NOCOORD, HIGHLIGHT_NOCOORD, HIGHLIGHT_NOCOORD};
                             RE.height_volume_tool = -1;
                             UI.set_ui_hl_type(HIGHLIGHT_VOLUME);
                             RE.highlight_type = HIGHLIGHT_VOLUME;
                             break;
 
                         case SDLK_z :
-                            RE.highlight_wcoord = {-1, -1, -1};
-                            RE.highlight_wcoord2 = {-1, -1, -1};
+                            RE.highlight_wcoord = {HIGHLIGHT_NOCOORD, HIGHLIGHT_NOCOORD, HIGHLIGHT_NOCOORD};
+                            RE.highlight_wcoord2 = {HIGHLIGHT_NOCOORD, HIGHLIGHT_NOCOORD, HIGHLIGHT_NOCOORD};
                             RE.highlight_mode = (RE.highlight_mode+1)%5;
                             UI.set_ui_hl_mode(RE.highlight_mode);
                             break;
 
                         case SDLK_s :
-                            RE.highlight_wcoord = {-1, -1, -1};
-                            RE.highlight_wcoord2 = {-1, -1, -1};
+                            RE.highlight_wcoord = {HIGHLIGHT_NOCOORD, HIGHLIGHT_NOCOORD, HIGHLIGHT_NOCOORD};
+                            RE.highlight_wcoord2 = {HIGHLIGHT_NOCOORD, HIGHLIGHT_NOCOORD, HIGHLIGHT_NOCOORD};
                             RE.highlight_mode = RE.highlight_mode-1;
                             RE.highlight_mode = RE.highlight_mode < 0 ? 4 : RE.highlight_mode;
                             UI.set_ui_hl_mode(RE.highlight_mode);
@@ -844,7 +951,7 @@ void Game::input_construction()
                                 world_extras we;
                                 world_extras_fill(we);
                                 save_world_extras(Current_world_name, we);
-                                std::cout << "world saved !\n";
+                                std::cout << "world saved at " << total_filename << "\n";
                             }
                             else
                             {
@@ -865,15 +972,14 @@ void Game::input_construction()
                             break;
 
                         case SDLK_LEFT :
-                        case SDLK_a : 
-                            Current_block = circularNext(unlocked_blocks, Current_block);
-                            UI.set_ui_current_blocks(unlocked_blocks, Current_block);
+                        case SDLK_a :
+                            cb_id = (cb_id+1)%8;
                             break;
                         
                         case SDLK_RIGHT :
                         case SDLK_e : 
-                            Current_block = circularPrev(unlocked_blocks, Current_block);
-                            UI.set_ui_current_blocks(unlocked_blocks, Current_block);
+
+                            cb_id = cb_id-1 < 0 ? 7 : cb_id-1;
                             break;
                         
                         case SDLK_UP :
@@ -891,6 +997,7 @@ void Game::input_construction()
                             break;
 
                         case SDLK_h :
+                            std::cout << "UI_scale :" << UI.UI_scale;
                             std::cout << "sprite counter : " << RE.sprite_counter << '\n';
                             std::cout << "scale : 1/" << 1/RE.window.scale << '\n';
                             std::cout << "block_size : " << RE.block_onscreen_size << '\n';
@@ -900,6 +1007,15 @@ void Game::input_construction()
                         case SDLK_p :
                             // std::cout << "\nrefreshing shaders...";
                             system("cls");
+                            RE.refresh_shaders();
+                            RE.DFIB_shader.activate();
+                            GPU_SetShaderImage(RE.Textures[BLOCK_AO]->ptr, RE.DFIB_shader.get_location("ao"), 2);
+                            GPU_SetShaderImage(RE.Textures[SHADERTEXT_WATER]->ptr, RE.DFIB_shader.get_location("water"), 4);
+                            GPU_SetShaderImage(RE.Textures[BLOCK_BORDER]->ptr, RE.DFIB_shader.get_location("border"), 5);
+                            GPU_SetShaderImage(RE.Textures[BLOCK_NORMAL]->ptr, RE.DFIB_shader.get_location("normal"), 6);
+                            GPU_SetShaderImage(RE.Textures[BLOCK_LIGHT]->ptr, RE.DFIB_shader.get_location("light"), 7);
+                            RE.DFIB_shader.deactivate();
+                            
                             init_meteos();
                             RE.set_global_illumination(meteos[*Current_meteo].global_illumination);
                             RE.background_shader = meteos[*Current_meteo].background_shader;
@@ -911,14 +1027,14 @@ void Game::input_construction()
                             if(RE.highlight_type != HIGHLIGHT_PIPETTE)
                             {
                                 Current_HL_type = RE.highlight_type;
-                                RE.highlight_wcoord = {-1, -1, -1};
+                                RE.highlight_wcoord = {HIGHLIGHT_NOCOORD, HIGHLIGHT_NOCOORD, HIGHLIGHT_NOCOORD};
                                 RE.highlight_type = HIGHLIGHT_PIPETTE;
                                 UI.set_ui_hl_type(HIGHLIGHT_PIPETTE);
                             }
                             else
                             {
                                 RE.highlight_type = Current_HL_type;
-                                RE.highlight_wcoord = {-1, -1, -1};
+                                RE.highlight_wcoord = {HIGHLIGHT_NOCOORD, HIGHLIGHT_NOCOORD, HIGHLIGHT_NOCOORD};
                                 UI.set_ui_hl_type(RE.highlight_type);
                             }
 
@@ -930,7 +1046,13 @@ void Game::input_construction()
 
                         case SDLK_w :
                             state = STATE_BLOCK_SELECTION;
-                            SDL_ShowCursor(SDL_ENABLE);
+                            // SDL_ShowCursor(SDL_ENABLE);
+                            UI.set_ui_hl_mode(HIGHLIGHT_MOD_NONE);
+                            break;
+
+                        case SDLK_KP_1 :
+                            state = STATE_ADVENTURE;
+                            UI.set_ui_hl_mode(HIGHLIGHT_MOD_NONE);
                             break;
 
                         default : break;
@@ -970,6 +1092,20 @@ void Game::input_construction()
                     RE.height_volume_tool += event.wheel.y;
                     set_in_interval(RE.height_volume_tool, 0, world.max_block_coord.z);
                 }
+                else if(km & KMOD_RCTRL)
+                {
+                    RE.height_volume_tool += 8*event.wheel.y;
+                    set_in_interval(RE.height_volume_tool, 0, world.max_block_coord.z);
+                }
+                else if(km & KMOD_RSHIFT)
+                {
+                    UI.UI_scale += event.wheel.y*0.25;
+                    if(UI.UI_scale < 0.0)
+                        UI.UI_scale = 0.0;
+                    
+                    if(UI.UI_scale > 5.0)
+                        UI.UI_scale = 5.0;
+                }
                 else
                 {
                     GameEvent.add_event(GAME_EVENT_ADDSCALE, event.wheel.y);
@@ -986,33 +1122,33 @@ void Game::input_construction()
 
                         auto pipette = std::find(unlocked_blocks.begin(), unlocked_blocks.end(), id);
 
-                        if(pipette != unlocked_blocks.end() || *pipette == *unlocked_blocks.end())
+                        if(pipette != unlocked_blocks.end() || *pipette != *unlocked_blocks.end())
                         {
                             // std::cout << "\npipette moment " << id;
 
-                            Current_block = pipette;
-                            UI.set_ui_current_blocks(unlocked_blocks, Current_block);
+                            UI.set_ui_current_blocks(cb_id, *pipette);
+                            currentblocks[cb_id] = *pipette;
                         }
 
                     }
-                    else if(RE.highlight_wcoord2.x == -1 && RE.highlight_type >= HIGHLIGHT_FLOOR)
+                    else if(RE.highlight_wcoord2.x == HIGHLIGHT_NOCOORD && RE.highlight_type >= HIGHLIGHT_FLOOR)
                     {
                         RE.highlight_wcoord2 = RE.highlight_wcoord;
                     }
                     else if(RE.highlight_mode >= HIGHLIGHT_MOD_REPLACE)
                     {
-                        GameEvent.add_event(GAME_EVENT_SINGLE_BLOCK_MOD, (coord3D)RE.highlight_wcoord, *Current_block);
+                        GameEvent.add_event(GAME_EVENT_PLAYER_BLOCK_MOD, (coord3D)RE.highlight_wcoord, currentblocks[cb_id]);
                     }
                     else if(RE.highlight_mode == HIGHLIGHT_MOD_DELETE)
                     {
-                        GameEvent.add_event(GAME_EVENT_SINGLE_BLOCK_MOD, (coord3D)RE.highlight_wcoord, BLOCK_EMPTY);
+                        GameEvent.add_event(GAME_EVENT_PLAYER_BLOCK_MOD, (coord3D)RE.highlight_wcoord, BLOCK_EMPTY);
                     }
                 }
                 else
                 if(event.button.button == SDL_BUTTON_MIDDLE)
                 {
-                    RE.highlight_wcoord = {-1, -1, -1};
-                    RE.highlight_wcoord2 = {-1, -1, -1};
+                    RE.highlight_wcoord = {HIGHLIGHT_NOCOORD, HIGHLIGHT_NOCOORD, HIGHLIGHT_NOCOORD};
+                    RE.highlight_wcoord2 = {HIGHLIGHT_NOCOORD, HIGHLIGHT_NOCOORD, HIGHLIGHT_NOCOORD};
                 }
                 break;
 
@@ -1025,6 +1161,120 @@ void Game::input_construction()
         refresh_world_render();
 };
 
+void Game::input_adventure()
+{
+    SDL_Event event;
+    SDL_Keymod km = SDL_GetModState();
+    SDL_GetMouseState((int*)&mouse.x, (int*)&mouse.y);
+
+    while(SDL_PollEvent(&event))
+    {
+    switch(event.key.type)
+    {
+        case SDL_KEYDOWN :
+            if(event.key.type == SDL_KEYDOWN && event.key.repeat == 0)
+                switch(event.key.keysym.sym)
+                {
+
+                    case SDLK_F4 : 
+                        if(km & KMOD_LALT)
+                        {
+                            state = STATE_QUIT;
+                        }
+
+                    case SDLK_ESCAPE :
+                        state = STATE_CONSTRUCTION;
+                        UI.set_ui_hl_mode(RE.highlight_mode);
+                        break;
+
+                    case SDLK_RETURN :
+                        if(km & KMOD_LALT)
+                            GPU_SetFullscreen(!GPU_GetFullscreen(), false);
+                        else
+                        {
+                            std::cout << "spawning player sprite\n";
+
+                            fcoord3D initial_playerpos = {world.max_block_coord.x*0.5f, 
+                                                          world.max_block_coord.y*0.5f,
+                                                          8.0};
+
+                            player.tp(initial_playerpos);
+
+                            // player.tp({50, 50, 2});
+
+                            next_frame_render_refresh = true;
+                        }
+                        break;
+                    
+                    case SDLK_DELETE :
+
+                        std::cout << "removing player sprite from world\n";
+                        player.remove();
+                        next_frame_render_refresh = true;
+
+                        break;
+                    
+                    case SDLK_r :
+                        RE.projection_grid.save_curr_interval();
+                        RE.refresh_pg_onscreen();
+                        break;
+
+                    default : break;
+                }
+            break;
+        
+        case SDL_MOUSEMOTION :
+            if(event.motion.state == SDL_BUTTON_RMASK)
+            {
+                GameEvent.add_event(GAME_EVENT_CAMERA_MOUVEMENT, (pixel_coord){event.motion.xrel, event.motion.yrel});
+            }
+            break;
+
+        case SDL_MOUSEWHEEL :
+            
+            GameEvent.add_event(GAME_EVENT_ADDSCALE, event.wheel.y);
+
+            break;
+
+        default:
+            break;
+        }
+    }
+
+    const Uint8* keystate = SDL_GetKeyboardState(NULL);
+
+    fcoord3D player_vel = {0.0, 0.0, 0.0};
+    // fcoord3D player_vel = {0.05*cos(timems*0.005), 0.0, 0.0};
+
+    float speed = 0.25;
+
+    if(keystate[ SDL_SCANCODE_W ])
+    {
+        player_vel.x += 1.0*speed;
+        // player_vel.y += 1.0*speed;
+    }
+    if(keystate[ SDL_SCANCODE_S ])
+    {
+        player_vel.x -= 1.0*speed;
+        // player_vel.y -= 1.0*speed;
+    }
+    if(keystate[ SDL_SCANCODE_A ])
+    {
+        // player_vel.x += 1.0*speed;
+        player_vel.y -= 1.0*speed;
+    }
+    if(keystate[ SDL_SCANCODE_D ])
+    {
+        // player_vel.x -= 1.0*speed;
+        player_vel.y += 1.0*speed;
+    }
+
+    if(player.move(player_vel))
+    {
+        next_frame_render_refresh = true;
+    }
+}
+
 int Game::mainloop()
 {
     while(state)
@@ -1036,7 +1286,9 @@ int Game::mainloop()
         RE.render_frame();
 
         if(Show_HUD || state != STATE_CONSTRUCTION)
-            UI.render_frame(state, RE.screen, New_world_name, Menu_hl_name);
+            UI.render_frame(state, RE.screen, 
+                            cb_id, bs_max_line, new_current_block, unlocked_blocks, 
+                            New_world_name, Menu_hl_name);
 
         GPU_Flip(RE.screen);
     }

@@ -45,6 +45,7 @@ uniform sampler2D ao;
 uniform sampler2D world;
 uniform sampler2D water;
 uniform sampler2D border;
+uniform sampler2D light;
 uniform sampler2D parts;
 
 float Ambiant_Oclusion(vec4 pixel_norm, vec4 pixel_AO)
@@ -430,7 +431,8 @@ vec4 handle_border(vec4 pixel_norm, vec4 PixelTint)
 {
     vec4 pixel_border = texture(border, texCoord);
 
-    vec4 border_color = vec4(1.5, 1.5, 1.25, 0.0);
+    // vec4 border_color = vec4(1.5, 1.5, 1.25, 0.0);
+    vec4 border_color = vec4(1.5, 1.5, 1.5, 0.0);
     // vec4 border_color = vec4(0.5, 0.5, 0.25, 0.0);
 
     if(pixel_border.a > 0.99)
@@ -548,6 +550,30 @@ void main (void)
     }
     ////////////////////////////////////////////////////////////////
 
+    ///////////////////// GLOBAL ILLUMINATION  //////////////////////
+    if((features & SFEATURE_GLOBAL_ILLUMINATION) == SFEATURE_GLOBAL_ILLUMINATION)
+    {
+        float GI = dot(light_direction, pixel_norm.rgb);
+
+        if(id >= 240 && GI < 0.75)
+            GI = 0.75;
+
+        if(id >= 224 && id < 240)
+        {
+            // GI = dot(vec3(1.0), pixel_norm.rgb);
+
+            PixelTint = vec4(1.0);
+
+            // GI = 2.5 * light_direction.a;
+
+            // GI = GI + (1-GI)*0.75; // light block
+            // GI += 0.25;
+        }
+
+        PixelTint *= GI;
+    }
+    /////////////////////////////////////////////////////////////////
+
     ///////////////////////// BASIC BORDER //////////////////////////
     if((features & SFEATURE_BLOCK_BORDERS) != 0)
     {
@@ -562,17 +588,6 @@ void main (void)
     }
     /////////////////////////////////////////////////////////////////
 
-    ///////////////////// GLOBAL ILLUMINATION  //////////////////////
-    if((features & SFEATURE_GLOBAL_ILLUMINATION) == SFEATURE_GLOBAL_ILLUMINATION)
-    {
-        float GI = dot(light_direction, pixel_norm.rgb);
-
-        if(id >= 240 && GI < 0.75)
-            GI = 0.75;
-
-        PixelTint *= GI;
-    }
-    /////////////////////////////////////////////////////////////////
 
     //////////////////// TRANSPARENT FRAGMENTS /////////////////////
     if(pixel.a > 0 && pixel.a != 1)
@@ -605,4 +620,23 @@ void main (void)
 
     PixelTint.a = 1;
     fragColor = pixel * PixelTint;
+
+    // debug
+    fragColor = vec4(0.0);
+    fragColor.a = 1.0;
+
+    fragColor.r = (block_height%256)/256.0;
+    fragColor.g = (block_height>>8)/2.0;
+    
+    if(pixel_norm.r == 1)
+        fragColor.g += 128/256.0;
+
+    else if(pixel_norm.g == 1)
+        fragColor.g += 192/256.0;
+
+    fragColor.a = id/32.0;
+
+    fragColor.b = PixelTint.r-0.20;
+
+    // fragColor.r = PixelTint.r;
 }

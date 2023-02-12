@@ -78,10 +78,11 @@ class UI_tile
         // int get_id();
 
         void change_atlas_id(int newaid);
+        void refresh_atlas_id();
         void change_size_norm(float sizex, float sizey);
         void change_position_norm(float x, float y);
 
-        void render(GPU_Target *);
+        void render(GPU_Target *, bool use_scale = true);
 
         bool is_mouse_over();
 
@@ -123,6 +124,8 @@ class UI_text
 
 class UI_Engine
 {
+    SDL_Cursor *cursors[5];
+
     std::list<std::shared_ptr<UI_tile>> world_selection;
     std::list<std::shared_ptr<UI_text>> world_selection_txt;
     std::list<std::shared_ptr<UI_text>> main_menu;
@@ -130,11 +133,13 @@ class UI_Engine
     std::unique_ptr<UI_text> main_menu_version;
     std::unique_ptr<UI_text> main_menu_title;
 
-    std::unique_ptr<UI_tile> main_game_currentblockpp;
-    std::unique_ptr<UI_tile> main_game_currentblockp;
-    std::unique_ptr<UI_tile> main_game_currentblock;
-    std::unique_ptr<UI_tile> main_game_currentblockn;
-    std::unique_ptr<UI_tile> main_game_currentblocknn;
+    // std::unique_ptr<UI_tile> main_game_currentblockpp;
+    // std::unique_ptr<UI_tile> main_game_currentblockp;
+    // std::unique_ptr<UI_tile> main_game_currentblock;
+    // std::unique_ptr<UI_tile> main_game_currentblockn;
+    // std::unique_ptr<UI_tile> main_game_currentblocknn;
+
+    std::unique_ptr<UI_tile> currentblocks[8];
 
     std::unique_ptr<UI_tile> main_game_hl_mode;
     std::unique_ptr<UI_tile> main_game_hl_type;
@@ -146,14 +151,20 @@ class UI_Engine
     std::shared_ptr<UI_tile> font_bold;
     std::shared_ptr<UI_tile> font_light;
 
+    std::shared_ptr<Texture> block_atlasx32;
+
     public :
     
-    void set_ui_current_blocks(std::list<int> &, std::list<int>::iterator);
+    void set_ui_current_blocks(int cb_id, int bolck_id);
     void set_ui_hl_mode(int);
     void set_ui_hl_type(int);
 
     void render_frame(int game_state, 
                       GPU_Target* screen, 
+                      int cb_id,
+                      int bs_line_min,
+                      int &new_current_block,
+                      std::list<int> &unlocked_blocks,
                       std::string &New_world_name, 
                       std::string &Menu_hl_name);
 
@@ -161,6 +172,8 @@ class UI_Engine
 
     GPU_Image *UI_image;
     GPU_Target *UI;
+
+    float UI_scale;
 };
 
 #endif

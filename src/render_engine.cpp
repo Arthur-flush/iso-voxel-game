@@ -18,11 +18,25 @@ Render_Engine::Render_Engine(struct World& _world) : world{_world}
     shader_enable = true;
     SecondaryThread = NULL;
 
-    std::string geom = "shader/geometry.geom";
-    shader.load("shader/vertex.vert", "shader/fragment.frag", &geom);
+    highlight_wcoord2 = {HIGHLIGHT_NOCOORD, HIGHLIGHT_NOCOORD, HIGHLIGHT_NOCOORD};
+
+    refresh_shaders();
+}
+
+void Render_Engine::refresh_shaders()
+{
+    DFIB_shader.reset();
+    world_render_shader.reset();
+    post_process_shader.reset();
+    light_shader.reset();
+
+    std::string geom = "shader/blocks.geom";
+    DFIB_shader.load("shader/blocks.vert", "shader/blocks/DFIB.frag", &geom);
+    light_shader.load("shader/light.vert", "shader/light.frag", &geom);
+    transparent_shader.load("shader/blocks.vert", "shader/blocks/transparent.frag", &geom);
+
     world_render_shader.load("shader/opaque_world.vert", "shader/opaque_world.frag", NULL);
     post_process_shader.load("shader/post process.vert", "shader/post process.frag", NULL);
-    // background_shader.load("shader/background.vert", "shader/background.frag", NULL);
 
     shader_features = 0;
     shader_features ^= SFEATURE_GLOBAL_ILLUMINATION;
@@ -35,8 +49,6 @@ Render_Engine::Render_Engine(struct World& _world) : world{_world}
     GPU_SetUniformfv(3, 3, 1, light_direction);
     float global_illumination[4] = {1, 1, 1, 0.60};
     GPU_SetUniformfv(4, 4, 1, global_illumination);
-
-    highlight_wcoord2 = {-1, -1, -1};
 }
 
 void Render_Engine::refresh_sprite_size()
@@ -149,52 +161,50 @@ void Render_Engine::set_block_renderflags(char face, int i, int j)
         sb->render_flags_transparent.r = world.get_block_id(bc.chunk, bc.x, bc.y+1, bc.z) ? 0 : 128;
         sb->render_flags_transparent.g = world.get_block_id(bc.chunk, bc.x+1, bc.y, bc.z) ? 0 : 128;
         sb->render_flags_transparent.b = world.get_block_id(bc.chunk, bc.x, bc.y, bc.z+1) ? 0 : 128;
+        sb->render_flags_transparent.a = 0;
+        // Uint8 diff;
+        // if(sb->height)
+        // {
+        //     diff = (sb->height_transparent-sb->height);
+        // }
+        // else 
+        // {
+        //     int shift = sb->x_transparent < sb->y_transparent ? sb->x_transparent : sb->y_transparent;
+        //     shift = shift < sb->height_transparent ? shift : sb->height_transparent;
 
-        Uint8 diff;
-        if(sb->height)
-        {
-            diff = (sb->height_transparent-sb->height);
-        }
-        else 
-        {
-            int shift = sb->x_transparent < sb->y_transparent ? sb->x_transparent : sb->y_transparent;
-            shift = shift < sb->height_transparent ? shift : sb->height_transparent;
+        //     diff = shift;
+        // }
 
-            diff = shift;
-        }
+        // diff = diff > 31 ? 31 : diff;
+        // sb->render_flags_transparent.a &= (128+64+32);
+        // sb->render_flags_transparent.a |= diff;
 
-        diff = diff > 31 ? 31 : diff;
-        sb->render_flags_transparent.a &= (128+64+32);
-        sb->render_flags_transparent.a |= diff;
+        // screen_block *sb_right = projection_grid.get_pos_world(sb->x_transparent, sb->y_transparent-1, sb->height_transparent);
+        // if(sb_right)
+        // {
+        //     diff = (sb->height_transparent-sb_right->height);
+        //     diff = diff > 31 ? 31 : diff;
+        //     sb->render_flags_transparent.r &= 128;
+        //     sb->render_flags_transparent.r |= diff;
+        // }
 
-        // screen_block *sb_right = projection_grid.get_pos_world(sb->x_transparent, sb->y_transparent-1, sb->height_transparent-1);
-        screen_block *sb_right = projection_grid.get_pos_world(sb->x_transparent, sb->y_transparent-1, sb->height_transparent);
-        if(sb_right)
-        {
-            diff = (sb->height_transparent-sb_right->height);
-            diff = diff > 31 ? 31 : diff;
-            sb->render_flags_transparent.r &= 128;
-            sb->render_flags_transparent.r |= diff;
-        }
+        // screen_block *sb_left = projection_grid.get_pos_world(sb->x_transparent-1, sb->y_transparent, sb->height_transparent);
+        // if(sb_left)
+        // {
+        //     diff = (sb->height_transparent-sb_left->height);
+        //     diff = diff > 31 ? 31 : diff;
+        //     sb->render_flags_transparent.g &= 128;
+        //     sb->render_flags_transparent.g |= diff;
+        // }
 
-        // screen_block *sb_left = projection_grid.get_pos_world(sb->x_transparent-1, sb->y_transparent, sb->height_transparent-1);
-        screen_block *sb_left = projection_grid.get_pos_world(sb->x_transparent-1, sb->y_transparent, sb->height_transparent);
-        if(sb_left)
-        {
-            diff = (sb->height_transparent-sb_left->height);
-            diff = diff > 31 ? 31 : diff;
-            sb->render_flags_transparent.g &= 128;
-            sb->render_flags_transparent.g |= diff;
-        }
-
-        screen_block *sb_down = projection_grid.get_pos_world(sb->x_transparent, sb->y_transparent, sb->height_transparent-1);
-        if(sb_down)
-        {
-            diff = (sb->height_transparent-sb_down->height);
-            diff = diff > 31 ? 31 : diff;
-            sb->render_flags_transparent.b &= 128;
-            sb->render_flags_transparent.b |= diff;
-        }
+        // screen_block *sb_down = projection_grid.get_pos_world(sb->x_transparent, sb->y_transparent, sb->height_transparent-1);
+        // if(sb_down)
+        // {
+        //     diff = (sb->height_transparent-sb_down->height);
+        //     diff = diff > 31 ? 31 : diff;
+        //     sb->render_flags_transparent.b &= 128;
+        //     sb->render_flags_transparent.b |= diff;
+        // }
 
         // for borders
         // sb->render_flags_transparent.r += world.get_block_id(coord, tx-1, ty, tz) ? 2 : 0;
@@ -347,9 +357,15 @@ bool Render_Engine::render_block(const chunk_coordonate &wcoord, const chunk_coo
         GPU_BlitRect(
                     Textures[MOSAIC]->ptr,
                     &src_rect,
-                    screen2,
+                    DFIB_screen,
                     &dst_rect
                     );
+        
+        if(b.id > BLOCK_LIGHT_LIMIT)
+        {
+            lights.push(sb);
+        }
+
         return true;
     }
     return false;
@@ -422,10 +438,10 @@ bool Render_Engine::render_transparent_block(const chunk_coordonate &wcoord, con
         GPU_BlitRect(
                     Textures[MOSAIC]->ptr,
                     &src_rect,
-                    screen2,
+                    transparent_screen,
                     &dst_rect
                     );
-        
+
         return true;
     }
     return false;
@@ -483,7 +499,7 @@ void Render_Engine::render_highlighted_blocks()
         GPU_SetUniformi(8, BLOCK_TEXTURE_SIZE);
 
 
-        if(highlight_type >= HIGHLIGHT_FLOOR && highlight_wcoord2.x != -1 && highlight_wcoord.x != -1 && highlight_type != HIGHLIGHT_PIPETTE)
+        if(highlight_type >= HIGHLIGHT_FLOOR && highlight_wcoord2.x != HIGHLIGHT_NOCOORD && highlight_wcoord.x != HIGHLIGHT_NOCOORD && highlight_type != HIGHLIGHT_PIPETTE)
         {
             int xbeg = highlight_wcoord.x;
             int xend = highlight_wcoord2.x;
@@ -556,16 +572,19 @@ void Render_Engine::render_highlighted_blocks()
                 
                 sb = projection_grid.get_pos_world(x, y, z);
 
+                if(!sb)
+                    continue;
+
                 if(sb->height == z)
                 {
                     GPU_SetColor(Textures[BLOCK_HIGHLIGHT]->ptr, sb->render_flags);
-                    GPU_BlitRect(Textures[BLOCK_HIGHLIGHT]->ptr, &src_rect, screen2, &dst_rect);
+                    GPU_BlitRect(Textures[BLOCK_HIGHLIGHT]->ptr, &src_rect, transparent_screen, &dst_rect);
                 }
 
                 else if(sb->height <= z)
                 {
                     GPU_SetColor(Textures[BLOCK_HIGHLIGHT]->ptr, {128, 128, 128, 0});
-                    GPU_BlitRect(Textures[BLOCK_HIGHLIGHT]->ptr, &src_rect, screen2, &dst_rect);
+                    GPU_BlitRect(Textures[BLOCK_HIGHLIGHT]->ptr, &src_rect, transparent_screen, &dst_rect);
                 }
             }
 
@@ -573,17 +592,75 @@ void Render_Engine::render_highlighted_blocks()
         }
         else
         {
-            if(sb->height == highlight_wcoord.z)
-                GPU_SetColor(Textures[BLOCK_HIGHLIGHT]->ptr, sb->render_flags);
-            else
-                GPU_SetColor(Textures[BLOCK_HIGHLIGHT]->ptr, {128, 128, 128, 0});
+            int id = world.get_block_id_wcoord(highlight_wcoord.x+1, highlight_wcoord.y+1, highlight_wcoord.z);
 
-            GPU_BlitRect(Textures[BLOCK_HIGHLIGHT]->ptr, &src_rect, screen2, &dst_rect);
+            if(sb->height == highlight_wcoord.z)
+            {
+                SDL_Color rf = sb->render_flags;
+
+                if(id && id < BLOCK_TRANSPARENT_LIMIT)
+                    rf.a |= 1;
+
+                GPU_SetColor(Textures[BLOCK_HIGHLIGHT]->ptr, rf);
+            }
+            else
+            {
+                SDL_Color rf = {128, 128, 128, 0};
+
+                int t = world.get_block_id_wcoord(highlight_wcoord.x, highlight_wcoord.y, highlight_wcoord.z+1);
+                int l = world.get_block_id_wcoord(highlight_wcoord.x, highlight_wcoord.y+1, highlight_wcoord.z);
+                int r = world.get_block_id_wcoord(highlight_wcoord.x+1, highlight_wcoord.y, highlight_wcoord.z);
+
+                if(id && id < BLOCK_TRANSPARENT_LIMIT)
+                    rf.a += 1;
+
+                if(t && t < BLOCK_TRANSPARENT_LIMIT)
+                    rf.b = 0;
+
+                if(l && l < BLOCK_TRANSPARENT_LIMIT)
+                    rf.r = 0;
+
+                if(r && r < BLOCK_TRANSPARENT_LIMIT)
+                    rf.g = 0;
+                
+                GPU_SetColor(Textures[BLOCK_HIGHLIGHT]->ptr, rf);
+            }
+
+
+            GPU_BlitRect(Textures[BLOCK_HIGHLIGHT]->ptr, &src_rect, transparent_screen, &dst_rect);
         }
     }
 
 
     GPU_SetUniformi(8, MOSAIC_TEXTURE_SIZE);
+}
+
+void Render_Engine::render_lights()
+{
+    // shader.activate();
+    // light_shader.activate();
+    // light_shader.deactivate();
+
+    GPU_Rect src_rect = {0, 0, 1024, 1024};
+    GPU_Rect dst_rect = {0, 0, 0, 0};
+
+    while(!lights.empty())
+    {
+        screen_block *sb = lights.front();
+
+        src_rect.x = sb->opaque_block.id-1;
+        src_rect.y = sb->height;
+
+        dst_rect.x = sb->x-sb->height;
+        dst_rect.y = sb->y-sb->height;
+
+        GPU_SetColor(Textures[BLOCK_LIGHT]->ptr, sb->render_flags);
+        GPU_BlitRect(Textures[BLOCK_LIGHT]->ptr, &src_rect, light_screen, &dst_rect);
+
+        lights.pop();
+    }
+
+    // GPU_SetUniformf(6, block_onscreen_size);
 }
 
 void Render_Engine::refresh_block_visible(const chunk_coordonate& coord, const int x, const int y, const int z)
@@ -698,11 +775,10 @@ void Render_Engine::render_frame()
 {
     sprite_counter = 0;
 
-    GPU_ClearColor(screen2, {105, 156, 203, 255});
-    GPU_ClearColor(screen3, {105, 156, 203, 255});
+    GPU_ClearColor(DFIB_screen, {0, 0, 0, 0});
+    GPU_ClearColor(Color_screen, {0, 0, 0, 0});
+    GPU_ClearColor(transparent_screen, {0, 0, 0, 0});
     GPU_ClearColor(screen,  {105, 156, 203, 255});
-    // GPU_Clear(background);
-    // GPU_ClearColor(depth_fbo, {0, 0, 0, 255});
 
     /****************** GENERATING BACKGROUND **************************/
     background_shader->activate();
@@ -714,58 +790,90 @@ void Render_Engine::render_frame()
 
     GPU_SetShaderImage(Textures[BACKGROUND_SUNSET]->ptr, 16, 8); // donne iChannel0
 
-    GPU_BlitRect(Textures[BACKGROUND_SUNSET]->ptr, NULL, background, NULL);
+    GPU_BlitRect(Textures[BACKGROUND_SUNSET]->ptr, NULL, Color_screen, NULL);
 
     background_shader->deactivate();
     /*******************************************************************/
     // GPU_Blit(background_image, NULL, screen, 0, 0); // draw une image de taille identiques à lécran
-    GPU_Blit(background_image, NULL, screen2, 0, 0); 
-    GPU_Blit(background_image, NULL, screen3, 0, 0);    
+    // GPU_Blit(background_image, NULL, screen2, 0, 0); 
+    // GPU_Blit(background_image, NULL, Color_screen, 0, 0);    
 
 
     /****************** SETTING SHADER UNIFORMS ************************/
-    shader.activate();
+    DFIB_shader.activate();
 
     GPU_SetUniformf(1, timems/7500.0);
     GPU_SetUniformi(2, shader_features);
+    // GPU_SetUniformfv(3, 3, 1, gi_direction);
+    // GPU_SetUniformfv(4, 4, 1, global_illumination);
+    GPU_SetUniformiv(5, 4, 1, win_const);
+    GPU_SetUniformf(6, block_onscreen_size);
+    GPU_SetUniformi(7, BLOCK_TEXTURE_SIZE);
+    GPU_SetUniformi(8, MOSAIC_TEXTURE_SIZE);
+
+    GPU_SetShaderImage(DFIB_FBO, DFIB_shader.get_location("DFIB"), 3);
+    /******************************************************************/
+
+    /****************** RENDERING THE WORLD ***************************/
+    render_world();
+
+    GPU_ClearColor(light_screen, {0, 0, 0, 255});
+    light_shader.activate();
+    GPU_SetShaderImage(Textures[MOSAIC]->ptr, light_shader.get_location("block_atlas"), 1);
+    GPU_SetUniformiv(5, 4, 1, win_const);
+    GPU_SetUniformf(6, block_onscreen_size);
+    GPU_SetUniformi(8, 1024);
+    GPU_SetUniformi(7, 1024);
+    GPU_SetUniformf(1, timems/1000.0);
+    // GPU_SetShaderImage(Color_FBO, light_shader.get_location("world"), 3);
+    render_lights();
+    light_shader.deactivate();
+
+    
+    world_render_shader.activate();
+    GPU_SetShaderImage(light_FBO, world_render_shader.get_location("light"), 7);
+    GPU_SetShaderImage(Textures[MOSAIC]->ptr, world_render_shader.get_location("atlas"), 1);
+    GPU_SetUniformfv(3, 3, 1, gi_direction);
+    GPU_SetUniformfv(4, 4, 1, global_illumination);
+    GPU_SetUniformf(6, block_onscreen_size);
+    GPU_Blit(DFIB_FBO, NULL, Color_screen, 0, 0);
+    world_render_shader.deactivate();
+
+
+    transparent_shader.activate();
+    GPU_SetShaderImage(Textures[MOSAIC]->ptr, world_render_shader.get_location("atlas"), 1);
+    GPU_SetShaderImage(Color_FBO, transparent_shader.get_location("world"), 8);
+    GPU_SetShaderImage(Textures[BLOCK_NORMAL]->ptr, transparent_shader.get_location("normal"), 6);
+    GPU_SetUniformf(1, timems/7500.0);
     GPU_SetUniformfv(3, 3, 1, gi_direction);
     GPU_SetUniformfv(4, 4, 1, global_illumination);
     GPU_SetUniformiv(5, 4, 1, win_const);
     GPU_SetUniformf(6, block_onscreen_size);
     GPU_SetUniformi(7, BLOCK_TEXTURE_SIZE);
     GPU_SetUniformi(8, MOSAIC_TEXTURE_SIZE);
+    
+    render_transparent_world();
 
-    GPU_SetShaderImage(opaque_world_render, shader.get_location("world"), 3);
-    GPU_SetShaderImage(depth_fbo_image, shader.get_location("depth_fbo"), 1);
-    /******************************************************************/
-
-    /****************** RENDERING THE WORLD ***************************/
-    // GPU_SetDepthWrite(screen, true);
-    render_world();
-
-    shader.activate();
     if(window.scale > PANORAMA_SCALE_THRESHOLD && *state == STATE_CONSTRUCTION)
     {
         if(highlight_mode || highlight_type == HIGHLIGHT_PIPETTE)
             highlight_block2();
-
-        render_highlighted_blocks();    
+        GPU_SetShaderImage(Textures[BLOCK_HIGHLIGHT]->ptr, world_render_shader.get_location("atlas"), 1);
+        render_highlighted_blocks();
+        // GPU_SetShaderImage(Textures[MOSAIC]->ptr, world_render_shader.get_location("atlas"), 1);
     }
 
-    world_render_shader.activate();
-    GPU_Blit(final_world_render, NULL, screen3, 0, 0);
+    transparent_shader.deactivate();
+
     
-    // GPU_SetDepthFunction(RE.screen2, GPU_NEVER);
-    // GPU_SetDepthWrite(screen3, false);
-    shader.activate();
-    render_transparent_world();
-    // GPU_SetDepthWrite(screen3, true);
+    GPU_Blit(transparent_FBO, NULL, Color_screen, 0, 0);
     /*******************************************************************/
 
     /****************** POST PROCESS SHADER ****************************/
     post_process_shader.activate();
     GPU_SetUniformi(2, shader_features);
-    GPU_Blit(final_world_render, NULL, screen, 0, 0);
+    GPU_Blit(Color_FBO, NULL, screen, 0, 0);
+    GPU_Blit(transparent_FBO, NULL, screen, 0, 0);
     post_process_shader.deactivate();
     /*******************************************************************/
 

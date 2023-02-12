@@ -11,7 +11,7 @@ ESC : Return to the last menu
 RIGHT CLICK         : Move camera
 SCROLL              : Zoom camera
 Q/F                 : Rotate camera
-SHIFT + SCROLL      : Change the maximum height visible
+LSHIFT + SCROLL     : Change the maximum height visible
 PAGE UP/DOWN        : Change the maxumum height visible by 8 steps
 LEFT CLICK          : Pose current block
 A/E or LEFT/RIGHT   : Change current block
@@ -19,11 +19,14 @@ A/E or LEFT/RIGHT   : Change current block
 F                   : Toggle pipette tool
 MIDDLE CLICK or ESC : Reset current floor/wall/volume
 Z/S                 : Change hilight mode 
-CTRL + SCROLL       : Change wall/volume height
+LCTRL + SCROLL      : Change wall/volume height
+RCTRL + SCROLL      : Change wall/volume height by 8 steps
 UP / DOWN           : Change meteo
 F5                  : Quick save
 F9                  : Quick load
 X                   : Toggle HUD
+W                   : Open block selection menu
+RSHIFT + SCROLL     : Change UI scale (experimental)
 
 - DEBUG -
 

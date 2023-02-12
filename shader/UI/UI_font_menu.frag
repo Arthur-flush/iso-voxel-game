@@ -33,21 +33,12 @@ void main (void)
 {
     vec4 pixel = texture(world, texCoord);
     
-    // float cx = (gl_FragCoord.x-win_const.w)/win_const.x;
     float cx = (gl_FragCoord.x-win_const.z)/win_const.x;
     float cy = (gl_FragCoord.y-win_const.a)/win_const.y;
 
     if(pixel.a != 0)
     {
         fragColor.rgb = vec3(0.85);
-
-
-        // vec3 color1 = vec3(1, 0, 1);
-        // vec3 color2 = vec3(0, 0, 1);
-
-        // cy = sin(cy + Time);
-
-        // fragColor.rgb = cy*color1 + (1-cy)*color2;
 
         fragColor.a = pixel.a;
     }
@@ -63,8 +54,16 @@ void main (void)
     }
 
 
+
+
     // fragColor = pixel;
 
-    // fragColor = vec4(cx, cy, 0.0, 1.0);
+    // if(fragColor.a == 0)
+    //     fragColor = vec4(1.0);
+
+    // fragColor.rg = texCoord;
+
+    // fragColor.a = 1.0;
+
     gl_FragDepth = 0;
 }

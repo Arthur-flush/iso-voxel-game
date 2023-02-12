@@ -47,12 +47,19 @@ struct world_extras_select {
 class Game
 {
     private :
+
+        bool next_frame_render_refresh;
+
         Uint16 state;
 
-        // Uint16 Current_block;
+        int new_current_block;
+        int bs_max_line;
         std::list<int> unlocked_blocks;
         std::list<int> unlocked_meteo;
-        std::list<int>::iterator Current_block;
+        
+        int currentblocks[8];
+        int cb_id;
+
         std::list<int>::iterator Current_meteo;
         int Current_HL_type;
 
@@ -62,6 +69,9 @@ class Game
         std::string Menu_hl_name;
 
         bool Show_HUD;
+
+
+        sprite player;
 
         World world;
         UI_Engine UI;
@@ -97,6 +107,8 @@ class Game
         // fills a world_extras with the corresponding data
         void world_extras_fill(world_extras& extras);
 
+        void create_new_world(coord3D size, std::string &name);
+
         void refresh_world_render();
         void refresh_world_render_fast();
         
@@ -104,6 +116,7 @@ class Game
         void input_world_selection();
         void input_block_selection();
         void input_construction();
+        void input_adventure();
         void input();
 
 
