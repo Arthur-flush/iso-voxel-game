@@ -1196,7 +1196,7 @@ void Game::input_adventure()
 
                             fcoord3D initial_playerpos = {world.max_block_coord.x*0.5f, 
                                                           world.max_block_coord.y*0.5f,
-                                                          8.0};
+                                                          2.0};
 
                             player.tp(initial_playerpos);
 
@@ -1246,26 +1246,26 @@ void Game::input_adventure()
     fcoord3D player_vel = {0.0, 0.0, 0.0};
     // fcoord3D player_vel = {0.05*cos(timems*0.005), 0.0, 0.0};
 
-    float speed = 0.25;
+    float speed = 1.0;
 
     if(keystate[ SDL_SCANCODE_W ])
     {
         player_vel.x += 1.0*speed;
-        // player_vel.y += 1.0*speed;
+        player_vel.y += 1.0*speed;
     }
     if(keystate[ SDL_SCANCODE_S ])
     {
         player_vel.x -= 1.0*speed;
-        // player_vel.y -= 1.0*speed;
+        player_vel.y -= 1.0*speed;
     }
     if(keystate[ SDL_SCANCODE_A ])
     {
-        // player_vel.x += 1.0*speed;
+        player_vel.x += 1.0*speed;
         player_vel.y -= 1.0*speed;
     }
     if(keystate[ SDL_SCANCODE_D ])
     {
-        // player_vel.x -= 1.0*speed;
+        player_vel.x -= 1.0*speed;
         player_vel.y += 1.0*speed;
     }
 
