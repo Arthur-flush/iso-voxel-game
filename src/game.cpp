@@ -1,3 +1,5 @@
+#include <dirent.h>
+
 #include <game.hpp>
 
 std::list<int>::iterator circularPrev(std::list<int> &l, std::list<int>::iterator &it)
@@ -295,6 +297,7 @@ void Game::world_extras_fill(world_extras& extras)
 }
 
 int Game::load_world(std::string filename, 
+               bool load_undo,
                bool new_size, 
                bool recenter_camera, 
                world_extras* extras, 
@@ -352,6 +355,56 @@ int Game::load_world(std::string filename,
     else
         std::cout << "world load failed ._. !\n";
 
+    if (load_undo) {
+        // undo
+        std::string path = "saves/" + filename + "/undo_worlds/";
+        undo_buffer.free();
+        undo_buffer.init(max_undo_worlds, path);
+        DIR* dir;
+        struct dirent* ent;
+
+        if ((dir = opendir(path.c_str())) != NULL) {
+            while ((ent = readdir(dir)) != NULL) {
+                if (ent->d_name[0] != '.') { 
+                    std::string name = ent->d_name;
+                    std::string number = name.substr(0, name.find("."));
+                    int num = std::stoi(number);
+                    undo_buffer[num]->allocated = true;
+                }
+            }
+            closedir(dir);
+        }
+        else {
+            std::cout << "Error opening undo directory " << path << std::endl;
+            // create directory
+            if (mkdir(path.c_str()) == -1) {
+                std::cout << "Error creating undo directory " << path << std::endl;
+            }
+        }
+
+        // redo
+        redo_buffer.free();
+        redo_buffer.init(max_undo_worlds, path);
+        path = "saves/" + filename + "/redo_worlds/";
+        if ((dir = opendir(path.c_str())) != NULL) {
+            while ((ent = readdir(dir)) != NULL) {
+                if (ent->d_name[0] != '.') { 
+                    std::string name = ent->d_name;
+                    std::string number = name.substr(0, name.find("."));
+                    int num = std::stoi(number);
+                    redo_buffer[num]->allocated = true;
+                }
+            }
+            closedir(dir);
+        }
+        else {
+            std::cout << "Error opening redo directory " << path << std::endl;
+            // create directory
+            if (mkdir(path.c_str()) == -1) {
+                std::cout << "Error creating redo directory " << path << std::endl;
+            }
+        }
+    }
 
     // end = Get_time_ms();
 
@@ -362,6 +415,71 @@ int Game::load_world(std::string filename,
     // << end-start << "ms\n";
 
     return status;
+}
+
+int Game::undo() {
+    if (!undo_buffer.any()) { // if no entry in the undo buffer is allocated
+        return SAVE_ERROR_CANNOT_UNDO;
+    }
+
+    CircularBufferNode* head = --undo_buffer;
+    std::string path = head->filepath;
+    head->allocated = false;
+
+    int status = world.load_from_file(path.c_str());
+    if (status == 0) {
+        redo_buffer[head->id]->allocated = true;
+
+        // move the file to the redo buffer directory
+        std::string path2 = redo_buffer[head->id]->filepath;
+        rename(path.c_str(), path2.c_str());
+
+        RE.max_height_render = world.max_block_coord.z;
+
+        RE.set_global_illumination_direction();
+
+        refresh_world_render();
+    }
+    return status;
+}
+
+int Game::redo() {
+    if (!redo_buffer.any()) { // if no entry in the redo buffer is allocated
+        return SAVE_ERROR_CANNOT_REDO;
+    }
+
+    CircularBufferNode* head = redo_buffer++;
+    std::string path = head->filepath;
+    head->allocated = false;
+
+    int status = world.load_from_file(path.c_str());
+    if (status == 0) {
+        undo_buffer[head->id]->allocated = true;
+
+        // move the file to the undo buffer directory
+        std::string path2 = undo_buffer[head->id]->filepath;
+        rename(path.c_str(), path2.c_str());
+
+        RE.max_height_render = world.max_block_coord.z;
+
+        RE.set_global_illumination_direction();
+        
+        refresh_world_render();
+    }
+    return status;
+}
+
+void Game::save_world_undo() {
+    if (Current_world_name == "") {
+        return;
+    }
+
+    CircularBufferNode* head = undo_buffer++;
+    std::string path = head->filepath;
+    head->allocated = true;
+
+    world.save_to_file(path.c_str());
+
 }
 
 void Game::refresh_world_render()
@@ -559,9 +677,10 @@ void Game::input_world_selection()
                     world_extras_select wes(false);
                     wes.world_view_position = true;
                     wes.meteo = true;
-                    load_world(New_world_name, true, true, nullptr, wes);
+                    load_world(New_world_name, true, true, true, nullptr, wes);
 
                     Current_world_name = New_world_name;
+                    // std::cout << "World loaded : " << New_world_name << '\n';
                 }
             }
             // Current_world_name = "/noworld";
@@ -758,10 +877,23 @@ void Game::input_construction()
                             break;
 
                         case SDLK_z :
-                            RE.highlight_wcoord = {-1, -1, -1};
-                            RE.highlight_wcoord2 = {-1, -1, -1};
-                            RE.highlight_mode = (RE.highlight_mode+1)%5;
-                            UI.set_ui_hl_mode(RE.highlight_mode);
+                            if (km & KMOD_LCTRL)
+                            {
+                                if (km & KMOD_LSHIFT)
+                                {
+                                    redo();
+                                }
+                                else
+                                {
+                                    undo();
+                                }
+                            }
+                            else {
+                                RE.highlight_wcoord = {-1, -1, -1};
+                                RE.highlight_wcoord2 = {-1, -1, -1};
+                                RE.highlight_mode = (RE.highlight_mode+1)%5;
+                                UI.set_ui_hl_mode(RE.highlight_mode);
+                            }
                             break;
 
                         case SDLK_s :
@@ -1001,10 +1133,12 @@ void Game::input_construction()
                     }
                     else if(RE.highlight_mode >= HIGHLIGHT_MOD_REPLACE)
                     {
+                        save_world_undo();
                         GameEvent.add_event(GAME_EVENT_SINGLE_BLOCK_MOD, (coord3D)RE.highlight_wcoord, *Current_block);
                     }
                     else if(RE.highlight_mode == HIGHLIGHT_MOD_DELETE)
                     {
+                        save_world_undo();
                         GameEvent.add_event(GAME_EVENT_SINGLE_BLOCK_MOD, (coord3D)RE.highlight_wcoord, BLOCK_EMPTY);
                     }
                 }

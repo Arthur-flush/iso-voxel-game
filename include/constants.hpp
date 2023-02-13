@@ -46,6 +46,8 @@ tested floats exemple :
 //////// SAVE/LOAD ERROR CODES ////////
 #define SAVE_ERROR_NONE 0
 #define SAVE_ERROR_FILE_NOT_OPEN 1
+#define SAVE_ERROR_CANNOT_UNDO 2
+#define SAVE_ERROR_CANNOT_REDO 3
 
 //////// HIGHLIGHT ////////
 #define HIGHLIGHT_MOD_NONE      0

@@ -173,10 +173,10 @@ void UI_Engine::generate_tiles(int game_state, int screenw, int screenh)
     {
         std::list<std::string> worlds_names;
 
-        worlds_names.push_back("HUT");
-        worlds_names.push_back("ISLAND");
-        worlds_names.push_back("PLAIN");
-        worlds_names.push_back("PLAYGROUND");
+        worlds_names.push_back("hut");
+        worlds_names.push_back("island");
+        worlds_names.push_back("plain");
+        worlds_names.push_back("playground");
 
         float wstxt_y = 0.325;
         float wstxt_yjumps = 0.15;

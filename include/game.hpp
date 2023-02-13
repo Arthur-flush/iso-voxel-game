@@ -14,6 +14,7 @@
 #include <render_engine.hpp>
 #include <multithreaded_event_handler.hpp>
 #include <meteo.hpp>
+#include <containers.hpp>
 
 extern pixel_coord mouse;
 
@@ -56,6 +57,11 @@ class Game
         std::list<int>::iterator Current_meteo;
         int Current_HL_type;
 
+        CircularBuffer undo_buffer;
+        CircularBuffer redo_buffer;
+
+        const Uint8 max_undo_worlds = 10;
+
         std::string New_world_name;
         std::string Current_world_name;
 
@@ -79,10 +85,12 @@ class Game
         // if world_extras is not null, it will be filled with the world_extras from the corresponding file
         // if apply_extras is true, the world_extras will be applied to the world
         int load_world(std::string filename, 
+                       bool load_undo = true,
                        bool new_size = true, 
                        bool recenter_camera = false, 
                        world_extras* extras = nullptr, 
-                       world_extras_select extras_select = world_extras_select(false));
+                       world_extras_select extras_select = world_extras_select(false)
+                       );
 
         // saves a world extra given as a parameter to a file
         int save_world_extras(std::string filename, world_extras& extras);
@@ -106,7 +114,10 @@ class Game
         void input_construction();
         void input();
 
+        int undo();
+        int redo();
 
+        void save_world_undo();
 
     public :
         Game(GPU_Target*);

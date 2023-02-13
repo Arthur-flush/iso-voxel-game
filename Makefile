@@ -1,5 +1,5 @@
 CC = g++
-CPPFLAGS = -Wall
+CPPFLAGS = -Wall -g
 SDLFLAGS = -lmingw32 -lSDL2main -lSDL2 -lSDL2_gpu -Ofast
 OBJ = obj/main.o obj/game.o obj/texture.o obj/render_engine.o obj/render_engine_2.o obj/world.o obj/multithreaded_event_handler.o obj/Shader.o obj/projection_grid.o obj/UI_text.o obj/UI_tile.o obj/UI_engine.o obj/meteo.o
 INCLUDE = -Iinclude 
