@@ -82,47 +82,33 @@ struct CircularBuffer {
         } while(current != head);
     }
 
-    CircularBufferNode* GetNextAllocated() {
-        CircularBufferNode* current = head;
-        do {
-            if(current->allocated) {
-                return current;
-            }
-            current = current->next;
-        } while(current != head);
-        return head;
-    }
-
-    CircularBufferNode* GetPrevAllocated() {
-        CircularBufferNode* current = head;
-        do {
-            if(current->allocated) {
-                return current;
-            }
-            current = current->prev;
-        } while(current != head);
-        return head;
-    }
-
+    // prefix operator checks for allocation
     CircularBufferNode* operator++() {
-        head = GetNextAllocated();
+        if (head->next->allocated) {
+            head = head->next;
+        }
         return head;
     }
 
+    // prefix operator checks for allocation
     CircularBufferNode* operator--() {
-        head = GetPrevAllocated();
+        if (head->prev->allocated) {
+            head = head->prev;
+        }
         return head;
     }
 
+    // postfix operator doesnt check for allocation
     CircularBufferNode* operator++(int) {
         CircularBufferNode* tmp = head;
-        head = GetNextAllocated();
+        head = head->next;
         return tmp;
     }
 
+    // postfix operator doesnt check for allocation
     CircularBufferNode* operator--(int) {
         CircularBufferNode* tmp = head;
-        head = GetPrevAllocated();
+        head = head->prev;
         return tmp;
     }
 

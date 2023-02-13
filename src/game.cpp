@@ -383,9 +383,10 @@ int Game::load_world(std::string filename,
         }
 
         // redo
+        path = "saves/" + filename + "/redo_worlds/";
         redo_buffer.free();
         redo_buffer.init(max_undo_worlds, path);
-        path = "saves/" + filename + "/redo_worlds/";
+
         if ((dir = opendir(path.c_str())) != NULL) {
             while ((ent = readdir(dir)) != NULL) {
                 if (ent->d_name[0] != '.') { 
@@ -430,7 +431,6 @@ int Game::undo() {
     if (status == 0) {
         redo_buffer[head->id]->allocated = true;
 
-        // move the file to the redo buffer directory
         std::string path2 = redo_buffer[head->id]->filepath;
         rename(path.c_str(), path2.c_str());
 
@@ -448,7 +448,7 @@ int Game::redo() {
         return SAVE_ERROR_CANNOT_REDO;
     }
 
-    CircularBufferNode* head = redo_buffer++;
+    CircularBufferNode* head = ++redo_buffer;
     std::string path = head->filepath;
     head->allocated = false;
 
@@ -456,7 +456,6 @@ int Game::redo() {
     if (status == 0) {
         undo_buffer[head->id]->allocated = true;
 
-        // move the file to the undo buffer directory
         std::string path2 = undo_buffer[head->id]->filepath;
         rename(path.c_str(), path2.c_str());
 

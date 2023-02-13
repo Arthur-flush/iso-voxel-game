@@ -23,10 +23,13 @@ obj/main.o : main.cpp
 obj/%.o : src/%.cpp
 	$(CC) -c $(CPPFLAGS) $(SDLFLAGS) $(INCLUDE) $< -o $@ 
 
-PHONY : clean
+.PHONY : clean cleanwin install clear-undo run default
 
 clean : 
 	$(DEL) $(EXEC) obj/*.o
 
 cleanwin : 
 	$(DEL_win) $(EXEC) obj\*.o
+
+clear-undo :
+	find saves -name '*.bak' -print0 | xargs -0 rm
