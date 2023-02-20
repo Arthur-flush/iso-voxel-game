@@ -1,6 +1,8 @@
 #ifndef WORLD_HPP
 #define WORLD_HPP
 
+#include <mutex>
+
 #include <blocks.hpp>
 #include <coords.hpp>
 

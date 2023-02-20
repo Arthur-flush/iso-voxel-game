@@ -119,6 +119,7 @@ class Multithreaded_Event_Handler
         SDL_cond *new_nfs_event;
 
         bool is_NFS_reading_to_wpg;
+        SDL_mutex *world_and_projection_grid_mut;
 
         // Queue a new Non Frame Sensitive event for the corresponding thread
         void add_nfs_event(const int nfs_event_id);

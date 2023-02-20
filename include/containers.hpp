@@ -1,38 +1,38 @@
 #include <string>
 
-struct CircularBufferNode {
-    CircularBufferNode* next;
-    CircularBufferNode* prev;
+struct FileCircularBufferNode {
+    FileCircularBufferNode* next;
+    FileCircularBufferNode* prev;
     int id;
     std::string filepath;
     bool allocated;
 
-    CircularBufferNode(CircularBufferNode* next, CircularBufferNode* prev, int id, std::string filepath, bool allocated=false) :
+    FileCircularBufferNode(FileCircularBufferNode* next, FileCircularBufferNode* prev, int id, std::string filepath, bool allocated=false) :
         next(next), prev(prev), id(id), filepath(filepath), allocated(allocated) {}
 
-    CircularBufferNode* circularNext() {
+    FileCircularBufferNode* circularNext() {
         return next;
     }
 
-    CircularBufferNode* circularPrev() {
+    FileCircularBufferNode* circularPrev() {
         return prev;
     }
 
-    CircularBufferNode* operator++() {
+    FileCircularBufferNode* operator++() {
         return circularNext();
     }
 
-    CircularBufferNode* operator--() {
+    FileCircularBufferNode* operator--() {
         return circularPrev();
     }
 
-    CircularBufferNode* operator++(int) {
-        CircularBufferNode* tmp = circularNext();
+    FileCircularBufferNode* operator++(int) {
+        FileCircularBufferNode* tmp = circularNext();
         return tmp;
     }
 
-    CircularBufferNode* operator--(int) {
-        CircularBufferNode* tmp = circularPrev();
+    FileCircularBufferNode* operator--(int) {
+        FileCircularBufferNode* tmp = circularPrev();
         return tmp;
     }
 
@@ -41,18 +41,18 @@ struct CircularBufferNode {
     }
 };
 
-struct CircularBuffer {
-    CircularBufferNode* head;
+struct FileCircularBuffer {
+    FileCircularBufferNode* head;
 
-    CircularBuffer() {
+    FileCircularBuffer() {
         head = nullptr;
     }
 
     void init(int size, std::string folder) {
-        head = new CircularBufferNode(nullptr, nullptr, 0, folder + "0.bak");
-        CircularBufferNode* current = head;
+        head = new FileCircularBufferNode(nullptr, nullptr, 0, folder + "0.bak");
+        FileCircularBufferNode* current = head;
         for(int i = 1; i < size; i++) {
-            current->next = new CircularBufferNode(nullptr, current, i, folder + std::to_string(i) + ".bak");
+            current->next = new FileCircularBufferNode(nullptr, current, i, folder + std::to_string(i) + ".bak");
             current = current->next;
         }
         current->next = head;
@@ -61,59 +61,65 @@ struct CircularBuffer {
 
     void free() {
         if (!head) return;
-        CircularBufferNode* current = head;
+        FileCircularBufferNode* current = head;
         do {
-            CircularBufferNode* next = current->next;
+            FileCircularBufferNode* next = current->next;
             delete current;
             current = next;
         } while(current != head);
         head = nullptr;
     }
 
-    ~CircularBuffer() {
+    ~FileCircularBuffer() {
         free();
     }
 
     void clear() {
-        CircularBufferNode* current = head;
+        FileCircularBufferNode* current = head;
         do {
             current->allocated = false;
+            remove(current->filepath.c_str());
             current = current->next;
         } while(current != head);
     }
 
     // prefix operator checks for allocation
-    CircularBufferNode* operator++() {
-        if (head->next->allocated) {
+    FileCircularBufferNode* operator++() {
+        FileCircularBufferNode* tmp = head;
+        do {
             head = head->next;
-        }
+            if (head == tmp) return nullptr;
+        } while (!head->allocated);
+
         return head;
     }
 
     // prefix operator checks for allocation
-    CircularBufferNode* operator--() {
-        if (head->prev->allocated) {
+    FileCircularBufferNode* operator--() {
+        FileCircularBufferNode* tmp = head;
+        do {
             head = head->prev;
-        }
+            if (head == tmp) return nullptr;
+        } while (!head->allocated);
         return head;
     }
 
     // postfix operator doesnt check for allocation
-    CircularBufferNode* operator++(int) {
-        CircularBufferNode* tmp = head;
+    FileCircularBufferNode* operator++(int) {
+        FileCircularBufferNode* tmp = head;
         head = head->next;
         return tmp;
     }
 
     // postfix operator doesnt check for allocation
-    CircularBufferNode* operator--(int) {
-        CircularBufferNode* tmp = head;
+    FileCircularBufferNode* operator--(int) {
+        FileCircularBufferNode* tmp = head;
         head = head->prev;
         return tmp;
     }
 
-    CircularBufferNode* operator[](int id) { // get the element with id
-        CircularBufferNode* current = head;
+    FileCircularBufferNode* operator[](int id) { // get the element with id
+        FileCircularBufferNode* current = head;
         do {
             if(current->id == id) {
                 return current;
@@ -125,7 +131,7 @@ struct CircularBuffer {
 
     // checks if any is allocated
     bool any() { 
-        CircularBufferNode* current = head;
+        FileCircularBufferNode* current = head;
         do {
             if(current->allocated) {
                 return true;
@@ -137,7 +143,7 @@ struct CircularBuffer {
 
     // checks if all are allocated
     bool all() { 
-        CircularBufferNode* current = head;
+        FileCircularBufferNode* current = head;
         do {
             if(!current->allocated) {
                 return false;

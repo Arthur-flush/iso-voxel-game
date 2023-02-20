@@ -26,6 +26,8 @@ Multithreaded_Event_Handler::Multithreaded_Event_Handler(Render_Engine &_RE) : R
     nfs_mut = SDL_CreateMutex();
     new_nfs_event = SDL_CreateCond();
 
+    world_and_projection_grid_mut = SDL_CreateMutex();
+
     game_is_running = true;
     RE.SecondaryThread = SDL_CreateThread(SecondaryThread_operations, "iso2", this);
     NFS_Thread = SDL_CreateThread(NFS_operations, "iso3", this);
@@ -557,6 +559,7 @@ int NFS_operations(void *data)
                 MEH->nfs_event_queue.pop();
 
                 MEH->is_NFS_reading_to_wpg = true;
+                SDL_LockMutex(MEH->world_and_projection_grid_mut);
                 switch (event)
                 {
                 case NFS_OP_ALL_BLOCK_VISIBLE :
@@ -582,6 +585,7 @@ int NFS_operations(void *data)
                     break;
                 }
                 MEH->is_NFS_reading_to_wpg = false;
+                SDL_UnlockMutex(MEH->world_and_projection_grid_mut);
             }
         }
 

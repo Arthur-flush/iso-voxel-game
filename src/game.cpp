@@ -375,10 +375,10 @@ int Game::load_world(std::string filename,
             closedir(dir);
         }
         else {
-            std::cout << "Error opening undo directory " << path << std::endl;
+            // std::cout << "Error opening undo directory " << path << std::endl;
             // create directory
             if (mkdir(path.c_str()) == -1) {
-                std::cout << "Error creating undo directory " << path << std::endl;
+                std::cout << "Error opening and creating undo directory " << path << std::endl;
             }
         }
 
@@ -399,10 +399,10 @@ int Game::load_world(std::string filename,
             closedir(dir);
         }
         else {
-            std::cout << "Error opening redo directory " << path << std::endl;
+            // std::cout << "Error opening redo directory " << path << std::endl;
             // create directory
             if (mkdir(path.c_str()) == -1) {
-                std::cout << "Error creating redo directory " << path << std::endl;
+                std::cout << "Error opening and creating redo directory " << path << std::endl;
             }
         }
     }
@@ -423,16 +423,17 @@ int Game::undo() {
         return SAVE_ERROR_CANNOT_UNDO;
     }
 
-    CircularBufferNode* head = --undo_buffer;
+    FileCircularBufferNode* head = --undo_buffer;
     std::string path = head->filepath;
     head->allocated = false;
 
+    SDL_LockMutex(GameEvent.world_and_projection_grid_mut);
+    save_world_redo();
     int status = world.load_from_file(path.c_str());
+    SDL_UnlockMutex(GameEvent.world_and_projection_grid_mut);
     if (status == 0) {
-        redo_buffer[head->id]->allocated = true;
+        remove(path.c_str());
 
-        std::string path2 = redo_buffer[head->id]->filepath;
-        rename(path.c_str(), path2.c_str());
 
         RE.max_height_render = world.max_block_coord.z;
 
@@ -448,17 +449,17 @@ int Game::redo() {
         return SAVE_ERROR_CANNOT_REDO;
     }
 
-    CircularBufferNode* head = ++redo_buffer;
+    FileCircularBufferNode* head = --redo_buffer;
     std::string path = head->filepath;
     head->allocated = false;
 
+    SDL_LockMutex(GameEvent.world_and_projection_grid_mut);
+    save_world_undo(false);
     int status = world.load_from_file(path.c_str());
+    SDL_UnlockMutex(GameEvent.world_and_projection_grid_mut);
     if (status == 0) {
-        undo_buffer[head->id]->allocated = true;
-
-        std::string path2 = undo_buffer[head->id]->filepath;
-        rename(path.c_str(), path2.c_str());
-
+        remove(path.c_str());
+        
         RE.max_height_render = world.max_block_coord.z;
 
         RE.set_global_illumination_direction();
@@ -468,17 +469,31 @@ int Game::redo() {
     return status;
 }
 
-void Game::save_world_undo() {
+void Game::save_world_undo(bool clear) {
     if (Current_world_name == "") {
         return;
     }
 
-    CircularBufferNode* head = undo_buffer++;
+    if (clear)
+        redo_buffer.clear();
+
+    FileCircularBufferNode* head = undo_buffer++;
     std::string path = head->filepath;
     head->allocated = true;
 
     world.save_to_file(path.c_str());
+}
 
+void Game::save_world_redo() {
+    if (Current_world_name == "") {
+        return;
+    }
+
+    FileCircularBufferNode* head = redo_buffer++;
+    std::string path = head->filepath;
+    head->allocated = true;
+
+    world.save_to_file(path.c_str());
 }
 
 void Game::refresh_world_render()

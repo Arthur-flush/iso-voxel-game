@@ -10,7 +10,7 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_gpu.h>
 
-#include <ui_engine.hpp>
+#include <UI_engine.hpp>
 #include <render_engine.hpp>
 #include <multithreaded_event_handler.hpp>
 #include <meteo.hpp>
@@ -57,8 +57,8 @@ class Game
         std::list<int>::iterator Current_meteo;
         int Current_HL_type;
 
-        CircularBuffer undo_buffer;
-        CircularBuffer redo_buffer;
+        FileCircularBuffer undo_buffer;
+        FileCircularBuffer redo_buffer;
 
         const Uint8 max_undo_worlds = 10;
 
@@ -117,7 +117,8 @@ class Game
         int undo();
         int redo();
 
-        void save_world_undo();
+        void save_world_undo(bool clear = true);
+        void save_world_redo();
 
     public :
         Game(GPU_Target*);
