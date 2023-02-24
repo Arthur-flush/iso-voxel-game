@@ -3,6 +3,8 @@
 
 #include <constants.hpp>
 
+struct block_coordonate;
+
 struct coord3D
 {
     int x;
@@ -10,7 +12,9 @@ struct coord3D
     int z;
 
     bool operator==(const coord3D& other) const;
+    coord3D operator+(const coord3D& other) const;
 
+    block_coordonate to_block_coordonate() const;
 };
 
 
@@ -34,6 +38,7 @@ struct block_coordonate : coord3D
 
     block_coordonate operator+(const coord3D& other) const;
 
+    coord3D to_coord3D() const;
 };
 
 
@@ -59,4 +64,7 @@ struct fcoord2D
 };
 
 
+std::ostream& operator<<(std::ostream& os, const coord3D& coord);
+
+std::ostream& operator<<(std::ostream& os, const block_coordonate& coord);
 #endif

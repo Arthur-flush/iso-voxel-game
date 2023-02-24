@@ -131,6 +131,24 @@ block* World::get_block_wcoord(int x, int y, int z)
     return &chunks[coord.x][coord.y][coord.z].blocks[x][y][z];
 }
 
+Uint16 World::get_block_id_wcoord_nowvp(coord3D wcoord) const
+{
+    chunk_coordonate coord = {wcoord.x / CHUNK_SIZE,
+                              wcoord.y / CHUNK_SIZE,
+                              wcoord.z / CHUNK_SIZE};
+    
+    wcoord.x %= CHUNK_SIZE;
+    wcoord.y %= CHUNK_SIZE;
+    wcoord.z %= CHUNK_SIZE;
+
+    if(coord.x < min_chunk_coord.x || coord.x > max_chunk_coord.x ||
+       coord.y < min_chunk_coord.y || coord.y > max_chunk_coord.y ||
+       coord.z < min_chunk_coord.z || coord.z > max_chunk_coord.z)
+        return BLOCK_EMPTY;
+
+    return chunks[coord.x][coord.y][coord.z].blocks[wcoord.x][wcoord.y][wcoord.z].id;
+}
+
 Uint16 World::get_opaque_block_id(chunk_coordonate coord, int x, int y, int z)
 {
     block *b = get_block(coord, x, y ,z);
@@ -456,7 +474,7 @@ bool World::modify_block(world_coordonate wcoord, int id)
     }
 
     if (id == BLOCK_WATER) {
-        physics_engine->add_event(PHYSICS_EVENT_WATER_CHECK_BLOCK, &coord);
+        physics_engine->add_event(PHYSICS_EVENT_WATER_CHECK_BLOCK, &wcoord);
     }
 
     compress_chunk(coord.chunk.x, coord.chunk.y, coord.chunk.z);

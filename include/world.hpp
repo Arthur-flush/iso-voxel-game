@@ -31,10 +31,12 @@ struct World
     Uint16 get_block_id(chunk_coordonate, int, int, int);
     Uint16 get_block_id(block_coordonate);
     Uint16 get_block_id_wcoord(int, int, int);
+    Uint16 get_block_id_wcoord_nowvp(coord3D wcoord) const;
 
     Uint16 get_opaque_block_id(chunk_coordonate, int, int, int);
     
     block_coordonate convert_wcoord(int, int, int);
+    block_coordonate convert_wcoord(coord3D coord);
     world_coordonate convert_coord(block_coordonate);
 
     void translate_world_view_position(chunk_coordonate&, int&, int&, int&);

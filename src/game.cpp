@@ -555,6 +555,10 @@ void Game::input_maingame()
 
                         case SDLK_w: { 
                             if (RE.highlight_mode > HIGHLIGHT_MOD_NONE) {
+                                if (RE.highlight_wcoord2.x == -1 && RE.highlight_wcoord2.y == -1 && RE.highlight_wcoord2.z == -1) {
+                                    std::cout << "Selection Pos x = " << RE.highlight_wcoord.x << ", y = " << RE.highlight_wcoord.y << ", z = " << RE.highlight_wcoord.z << std::endl;
+                                }
+                                else {
                                 std::cout << "Selection begin: x = " << RE.highlight_wcoord2.x 
                                 << ", y = " << RE.highlight_wcoord2.y 
                                 << ", z = " << RE.highlight_wcoord2.z << std::endl;
@@ -569,6 +573,7 @@ void Game::input_maingame()
                                 << ", y = " << abs(RE.highlight_wcoord.y - RE.highlight_wcoord2.y) +1 
                                 << ", z = " << abs(RE.highlight_wcoord.z - RE.highlight_wcoord2.z) +1 
                                 << std::endl << std::endl;
+                                }
                                 
                             }
                             break;
@@ -628,7 +633,7 @@ void Game::input_maingame()
 
                         if (*Current_block == BLOCK_WATER)
                         {
-                            PhysicsEventWater *new_event = new PhysicsEventWater(&world, &physics_engine, &GameEvent, world.convert_wcoord(RE.highlight_wcoord.x, RE.highlight_wcoord.y, RE.highlight_wcoord.z));
+                            PhysicsEventWater *new_event = new PhysicsEventWater(&world, &physics_engine, &GameEvent, {RE.highlight_wcoord.x, RE.highlight_wcoord.y, RE.highlight_wcoord.z});
                             physics_engine.add_event(new_event);
                         }
                     }

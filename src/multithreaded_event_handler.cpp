@@ -420,9 +420,7 @@ void Multithreaded_Event_Handler::handle()
 
         case GAME_EVENT_SINGLE_BLOCK_MOD_ALT :
             {
-                // std::cout << "attempting to lock world mutex in game event single block mod alt" << std::endl;
                 PE->world_mutex.lock();
-                // std::cout << "world mutex lock in game event single block mod alt" << std::endl;
                 block_coordonate bc = event.data.coord1;
 
                 block *b = &RE.world.
@@ -453,7 +451,6 @@ void Multithreaded_Event_Handler::handle()
                     refresh_identical_line = true;
                 }
 
-                // std::cout << "world mutex unlock in game event single block mod alt" << std::endl;
                 PE->world_mutex.unlock();
                 break;
             }
