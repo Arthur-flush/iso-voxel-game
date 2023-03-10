@@ -82,7 +82,7 @@ class Multithreaded_Event_Handler
         Render_Engine &RE;
         PhysicsEngine* PE;
 
-        std::queue<game_event> event_queue;
+        std::queue<game_event*> event_queue;
 
         SDL_cond *new_frame_to_render;
         int SecondaryThread_opcode;
@@ -107,7 +107,7 @@ class Multithreaded_Event_Handler
         /********* Event OP ************/
 
         // Add an event
-        void add_event(game_event&);
+        void add_event(game_event*);
         void add_event(const int);
         void add_event(const int, const float);
         void add_event(const int, const pixel_coord);

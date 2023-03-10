@@ -42,89 +42,90 @@ Multithreaded_Event_Handler::~Multithreaded_Event_Handler()
     SDL_DestroyCond(new_nfs_event);
 }
 
-void Multithreaded_Event_Handler::add_event(game_event &new_event)
+void Multithreaded_Event_Handler::add_event(game_event *new_event)
 {
+    int y = new_event->id; 
     event_queue.push(new_event);
 }
 
 void Multithreaded_Event_Handler::add_event(const int _id)
 {
-    game_event new_event;
+    game_event* new_event = new game_event;
 
-    new_event.id = _id;
+    new_event->id = _id;
 
     add_event(new_event);
 }
 
 void Multithreaded_Event_Handler::add_event(const int _id, const float _scale)
 {
-    game_event new_event;
+    game_event* new_event = new game_event;
 
-    new_event.id = _id;
-    new_event.data.scale = _scale;
+    new_event->id = _id;
+    new_event->data.scale = _scale;
 
     add_event(new_event);
 }
 
 void Multithreaded_Event_Handler::add_event(const int _id, const pixel_coord _target)
 {
-    game_event new_event;
+    game_event* new_event = new game_event;
 
-    new_event.id = _id;
-    new_event.data.target = _target;
+    new_event->id = _id;
+    new_event->data.target = _target;
 
     add_event(new_event);
 }
 
 void Multithreaded_Event_Handler::add_event(const int _id, const coord3D coord)
 {
-    game_event new_event;
+    game_event* new_event = new game_event;
 
-    new_event.id = _id;
-    new_event.data.coord1.chunk = coord;
+    new_event->id = _id;
+    new_event->data.coord1.chunk = coord;
 
     add_event(new_event);
 }
 
 void Multithreaded_Event_Handler::add_event(const int _id, const block_coordonate coord)
 {
-    game_event new_event;
+    game_event* new_event = new game_event;
 
-    new_event.id = _id;
-    new_event.data.coord1 = coord;
+    new_event->id = _id;
+    new_event->data.coord1 = coord;
 
     add_event(new_event);
 }
 
 void Multithreaded_Event_Handler::add_event(const int _id, const block_coordonate coord, Uint16 _blockid)
 {
-    game_event new_event;
+    game_event* new_event  = new game_event;
 
-    new_event.id = _id;
-    new_event.data.coord1 = coord;
-    new_event.data.blockid = _blockid;
+    new_event->id = _id;
+    new_event->data.coord1 = coord;
+    new_event->data.blockid = _blockid;
 
     add_event(new_event);
 }
 
 void Multithreaded_Event_Handler::add_event(const int _id, const world_coordonate coord, Uint16 _blockid)
 {
-    game_event new_event;
+    game_event* new_event  = new game_event;
 
-    new_event.id = _id;
-    new_event.data.wcoord1 = coord;
-    new_event.data.blockid = _blockid;
+    new_event->id = _id;
+    new_event->data.wcoord1 = coord;
+    new_event->data.blockid = _blockid;
 
     add_event(new_event);
 }
 
 void Multithreaded_Event_Handler::add_event(const int _id, const block_coordonate _coord1, const block_coordonate _coord2)
 {
-    game_event new_event;
+    game_event* new_event  = new game_event;
 
-    new_event.id = _id;
-    new_event.data.coord1 = _coord1;
-    new_event.data.coord1 = _coord2;
+    new_event->id = _id;
+    new_event->data.coord1 = _coord1;
+    new_event->data.coord1 = _coord2;
 
     add_event(new_event);
 }
@@ -139,13 +140,13 @@ void Multithreaded_Event_Handler::handle()
 
     while(!event_queue.empty())
     {
-        game_event &event = event_queue.front();
+        game_event *event = event_queue.front();
 
-        switch(event.id)
+        switch(event->id)
         {
         case GAME_EVENT_NEWSCALE :
 
-            RE.window.scale = event.data.scale;
+            RE.window.scale = event->data.scale;
 
             SecondaryThread_opcode |= STHREAD_OP_PG_BLOCK_VISIBLE;
 
@@ -156,7 +157,7 @@ void Multithreaded_Event_Handler::handle()
 
         case GAME_EVENT_ADDSCALE :
 
-            if(event.data.scale > 0)
+            if(event->data.scale > 0)
             {
                 if(RE.window.scale < MAX_FLOAT_SCALE)
                 {
@@ -181,8 +182,8 @@ void Multithreaded_Event_Handler::handle()
         
         case GAME_EVENT_CAMERA_MOUVEMENT :
 
-            RE.target.x += event.data.target.x;
-            RE.target.y += event.data.target.y;
+            RE.target.x += event->data.target.x;
+            RE.target.y += event->data.target.y;
             SecondaryThread_opcode |= STHREAD_OP_PG_BLOCK_VISIBLE;
             SecondaryThread_opcode |= STHREAD_OP_PG_BLOCK_VISIBLE;
 
@@ -198,9 +199,9 @@ void Multithreaded_Event_Handler::handle()
 
             if(RE.highlight_wcoord2.x == -1)
             {
-                if(RE.world.modify_block(event.data.wcoord1, event.data.blockid))
+                if(RE.world.modify_block(event->data.wcoord1, event->data.blockid))
                 {
-                    block_coordonate bc = RE.world.convert_wcoord(event.data.wcoord1.x, event.data.wcoord1.y, event.data.wcoord1.z);
+                    block_coordonate bc = RE.world.convert_wcoord(event->data.wcoord1.x, event->data.wcoord1.y, event->data.wcoord1.z);
 
                     RE.refresh_block_visible(bc.chunk, bc.x, bc.y, bc.z);
                     RE.refresh_block_render_flags(bc.chunk, bc.x, bc.y, bc.z);
@@ -252,7 +253,7 @@ void Multithreaded_Event_Handler::handle()
                         for(int x = xbeg; x <= xend; x ++)
                         for(int z = zbeg; z <= zend; z ++)
                         {
-                            if(RE.world.modify_block({x, y, z}, event.data.blockid))
+                            if(RE.world.modify_block({x, y, z}, event->data.blockid))
                             {
                                 block_coordonate bc = RE.world.convert_wcoord(x, y, z);
 
@@ -292,7 +293,7 @@ void Multithreaded_Event_Handler::handle()
                         for(int x = xbeg; x <= xend; x ++)
                         for(int z = zbeg; z <= zend; z ++)
                         {
-                            RE.world.modify_block({x, y, z}, event.data.blockid);
+                            RE.world.modify_block({x, y, z}, event->data.blockid);
                         }
                     }
                     else
@@ -352,8 +353,8 @@ void Multithreaded_Event_Handler::handle()
                         for(int cz = chunk_zbeg_wvp; cz < chunk_zend_wvp; cz++)
                         {
                             // itcounter += CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
-                            memset(RE.world.chunks[cx][cy][cz].blocks, event.data.blockid, CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE * sizeof(block));
-                            RE.world.chunks[cx][cy][cz].compress_value = event.data.blockid;
+                            memset(RE.world.chunks[cx][cy][cz].blocks, event->data.blockid, CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE * sizeof(block));
+                            RE.world.chunks[cx][cy][cz].compress_value = event->data.blockid;
                             
                             chunk_coordonate c = {cx, cy, cz};
                             PE->add_event(PHYSICS_EVENT_WATER_CHECK_CHUNK, &c);
@@ -383,7 +384,7 @@ void Multithreaded_Event_Handler::handle()
                                                 if(x == chunk_xbeg*CHUNK_SIZE)
                                                     x = chunk_xend*CHUNK_SIZE;
 
-                                        RE.world.modify_block({x, y, z}, event.data.blockid);
+                                        RE.world.modify_block({x, y, z}, event->data.blockid);
                                         // itcounter ++;
                                     }
                                     
@@ -421,7 +422,7 @@ void Multithreaded_Event_Handler::handle()
         case GAME_EVENT_SINGLE_BLOCK_MOD_ALT :
             {
                 PE->world_mutex.lock();
-                block_coordonate bc = event.data.coord1;
+                block_coordonate bc = event->data.coord1;
 
                 block *b = &RE.world.
                             chunks
@@ -435,7 +436,7 @@ void Multithreaded_Event_Handler::handle()
 
                 if(!b->id)
                 {
-                    b->id = event.data.blockid;
+                    b->id = event->data.blockid;
 
                     RE.refresh_block_visible(bc.chunk, bc.x, bc.y, bc.z);
 
@@ -463,6 +464,7 @@ void Multithreaded_Event_Handler::handle()
         }
 
         event_queue.pop();
+        delete event;
     }
 
     SDL_UnlockMutex(init_cond);

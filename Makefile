@@ -1,5 +1,5 @@
 CC = g++
-CPPFLAGS = -Wall
+CPPFLAGS = -Wall -O3
 WINFLAGS = -lmingw32  ### need to remove this for linux
 SDLFLAGS = -lSDL2main -lSDL2 -lSDL2_gpu -g
 OBJ = obj/main.o obj/game.o obj/texture.o obj/render_engine.o obj/render_engine_2.o obj/world.o obj/multithreaded_event_handler.o obj/Shader.o obj/projection_grid.o obj/UI_tile.o obj/UI_engine.o obj/physics.o obj/coords.o

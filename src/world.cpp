@@ -82,6 +82,12 @@ Uint16 World::get_block_id_wcoord(int x, int y, int z)
     return b->id;
 }
 
+Uint16 World::get_block_id_wcoord(coord3D wcoord) 
+{
+    return get_block_id_wcoord(wcoord.x, wcoord.y, wcoord.z);
+}
+
+
 block* World::get_block(chunk_coordonate coord, int x, int y, int z)
 {
     translate_world_view_position(coord, x, y, z);

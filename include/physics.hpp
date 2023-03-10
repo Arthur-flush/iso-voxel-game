@@ -35,7 +35,7 @@ public:
     ~PhysicsEngine();
 
     void tick();
-    void add_event(PhysicsEvent* event);
+    void add_event(PhysicsEvent* event, bool check_duplicates = true);
     void add_event(int id, void* data); // for special events, like chunk checking
 
     void clear_events();

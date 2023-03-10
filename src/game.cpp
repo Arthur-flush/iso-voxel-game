@@ -542,6 +542,11 @@ void Game::input_maingame()
                             physics_engine.toggle_running();
                             break;
                         
+                        case SDLK_KP_PERIOD :
+                            std::cout << "Physics engine step\n";
+                            physics_engine.tick();
+                            break;
+                        
                         // case SDLK_KP_ENTER : 
                         //     for(int i = 0; i < 500; i++)
                         //     {
@@ -631,11 +636,14 @@ void Game::input_maingame()
                     {
                         GameEvent.add_event(GAME_EVENT_SINGLE_BLOCK_MOD, (coord3D)RE.highlight_wcoord, *Current_block);
 
+                        /*
                         if (*Current_block == BLOCK_WATER)
                         {
                             PhysicsEventWater *new_event = new PhysicsEventWater(&world, &physics_engine, &GameEvent, {RE.highlight_wcoord.x, RE.highlight_wcoord.y, RE.highlight_wcoord.z});
+                            std::cout << "new event added at " << RE.highlight_wcoord.x << " " << RE.highlight_wcoord.y << " " << RE.highlight_wcoord.z << "\n";
                             physics_engine.add_event(new_event);
                         }
+                        */
                     }
                     else if(RE.highlight_mode == HIGHLIGHT_MOD_DELETE)
                     {

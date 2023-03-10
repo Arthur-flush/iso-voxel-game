@@ -2,25 +2,6 @@
 #include <constants.hpp>
 #include <iostream>
 
-bool block_coordonate::operator<(const block_coordonate& other) const{
-    if (chunk.x < other.chunk.x) return true;
-    else if (chunk.x > other.chunk.x) return false;
-    else if (chunk.y < other.chunk.y) return true;
-    else if (chunk.y > other.chunk.y) return false;
-    else if (chunk.z < other.chunk.z) return true;
-    else if (chunk.z > other.chunk.z) return false;
-    else if (x < other.x) return true;
-    else if (x > other.x) return false;
-    else if (y < other.y) return true;
-    else if (y > other.y) return false;
-    else if (z < other.z) return true;
-    else if (z > other.z) return false;
-    else return false;
-    
-
-    // cursed je sais 
-}
-
 bool block_coordonate::operator==(const block_coordonate& other) const {
     return x == other.x && y == other.y && z == other.z && chunk.x == other.chunk.x && chunk.y == other.chunk.y && chunk.z == other.chunk.z;
 }
