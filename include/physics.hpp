@@ -14,6 +14,8 @@ class PhysicsEngine {
 private:
     std::deque<PhysicsEvent*> event_queue; // not a queue because we need to be able to search for duplicates
 
+    constexpr static int MAX_EVENTS_PER_TICK = 4000;
+
     const Uint64 tick_delay = 50;
     SDL_Thread* thread;
     std::mutex queue_mutex;

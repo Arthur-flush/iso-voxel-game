@@ -231,11 +231,15 @@ void PhysicsEngine::tick() {
 
     std::deque <PhysicsEvent*> event_queue_copy;
 
+    int i = 0;
     for (PhysicsEvent* event : event_queue) {
+        if (i++ == MAX_EVENTS_PER_TICK) {
+            break;
+        }
         event_queue_copy.push_back(event);
+        event_queue.pop_front();
     }
 
-    event_queue.clear();
 
 
     // std::cout << "queue_mutex unlock in tick" << std::endl;
