@@ -11,7 +11,7 @@
                 "_UNICODE"
             ],
             "windowsSdkVersion": "10.0.20348.0",
-            "compilerPath": "G:/software/mingw-64/mingw64/bin/g++.exe",
+            "compilerPath": "H:/mingw-64/mingw64/bin/g++.exe",
             "cStandard": "c17",
             "cppStandard": "c++17",
             "intelliSenseMode": "windows-gcc-x64"

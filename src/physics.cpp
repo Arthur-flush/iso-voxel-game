@@ -5,18 +5,7 @@
 
 #include "physics.hpp"
 
-bool* get_valid_adjacent_blocks_naive(World* world, coord3D coord) {
-    bool* result = new bool[5]; // 0-3: sides, 4: bellow
-    result[0] = coord.x + 1 < CHUNK_SIZE * (world->max_chunk_coord.x + 1) && world->get_block_id_wcoord_nowvp(coord + coord3D({1, 0, 0})) == BLOCK_EMPTY;
-    result[1] = coord.y + 1 < CHUNK_SIZE * (world->max_chunk_coord.y + 1) && world->get_block_id_wcoord_nowvp(coord + coord3D({0, 1, 0})) == BLOCK_EMPTY;
-    result[2] = coord.x - 1 >= 0 && world->get_block_id_wcoord_nowvp(coord + coord3D({-1, 0, 0})) == BLOCK_EMPTY;
-    result[3] = coord.y - 1 >= 0 && world->get_block_id_wcoord_nowvp(coord + coord3D({0, -1, 0})) == BLOCK_EMPTY;
-    result[4] = coord.z - 1 >= 0 && world->get_block_id_wcoord_nowvp(coord + coord3D({0, 0, -1})) == BLOCK_EMPTY;
-
-    return result;
-}
-
-bool* get_valid_adjacent_blocks_multi(World* world, coord3D coord) {
+bool* get_valid_adjacent_blocks(World* world, coord3D coord) {
     bool* result = new bool[5]; // 0: x+1, 1: y+1, 2: x-1, 3: y-1, 4: z-1
     
     if (coord.z - 1 >= 0 && world->get_block_id_wcoord_nowvp(coord + coord3D({0, 0, -1})) == BLOCK_EMPTY) {
@@ -42,7 +31,6 @@ void PhysicsEventWater::execute() {
         return;
     }
 
-    bool* valid_adjacent_blocks = get_valid_adjacent_blocks_multi(world, coord);
     constexpr coord3D coords[5] = {
         {1, 0, 0},
         {0, 1, 0},
@@ -50,6 +38,7 @@ void PhysicsEventWater::execute() {
         {0, -1, 0},
         {0, 0, -1}
     };
+    bool* valid_adjacent_blocks = get_valid_adjacent_blocks(world, coord);
 
 
     for (int i = 0; i < 5; i++) {

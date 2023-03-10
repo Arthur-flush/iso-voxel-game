@@ -44,7 +44,6 @@ Multithreaded_Event_Handler::~Multithreaded_Event_Handler()
 
 void Multithreaded_Event_Handler::add_event(game_event *new_event)
 {
-    int y = new_event->id; 
     event_queue.push(new_event);
 }
 
